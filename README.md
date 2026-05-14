@@ -47,6 +47,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Layout profesional oscuro tipo CAD.
 - Camion 3D transparente con dimensiones reales.
 - Grid tecnico y camara orbitable.
+- Toggle superior para mostrar u ocultar etiquetas de bultos.
 - Biblioteca de elementos y creacion de plantillas.
 - Colocacion manual de bultos con busqueda de hueco libre al añadir o duplicar.
 - Snap a grid, paredes y caras cercanas de otros bultos.

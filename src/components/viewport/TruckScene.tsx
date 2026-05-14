@@ -24,6 +24,7 @@ export function TruckScene() {
   const activeView = useLoadPlanStore((state) => state.activeView);
   const selectedItemId = useLoadPlanStore((state) => state.selectedItemId);
   const selectedItemIds = useLoadPlanStore((state) => state.selectedItemIds);
+  const showLabels = useLoadPlanStore((state) => state.showLabels);
   const selectItem = useLoadPlanStore((state) => state.selectItem);
   const moveSelectedByDelta = useLoadPlanStore((state) => state.moveSelectedByDelta);
   const report = useLoadPlanStore((state) => state.report);
@@ -113,6 +114,7 @@ export function TruckScene() {
             hasCollision={hasCollision}
             previewDeltaMm={previewDeltaMm}
             selectionDisabled={isTransformPointerActiveRef.current}
+            showLabel={showLabels}
             onSelect={(additive, point) => {
               if (isTransformPointerActiveRef.current) return;
               const clickNearGroupGizmo = selectedGroupCenter

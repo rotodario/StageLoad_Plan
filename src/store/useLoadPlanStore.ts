@@ -16,6 +16,7 @@ interface LoadPlanStore {
   selectedItemIds: string[];
   activeView: ViewPreset;
   workspaceMode: WorkspaceMode;
+  showLabels: boolean;
   report: PlannerReport;
   canUndo: boolean;
   canRedo: boolean;
@@ -36,6 +37,7 @@ interface LoadPlanStore {
   setTruck: (truck: Partial<Truck>) => void;
   setView: (view: ViewPreset) => void;
   setWorkspaceMode: (mode: WorkspaceMode) => void;
+  toggleLabels: () => void;
   saveLocal: () => void;
   loadPlan: (plan: LoadPlan) => void;
   resetPlan: () => void;
@@ -127,6 +129,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   selectedItemIds: [],
   activeView: "iso",
   workspaceMode: "viewport",
+  showLabels: true,
   report: makeReport(loadedPlan),
   canUndo: false,
   canRedo: false,
@@ -369,6 +372,8 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   setView: (view) => set({ activeView: view }),
 
   setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
+
+  toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
 
   saveLocal: () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(get().plan));

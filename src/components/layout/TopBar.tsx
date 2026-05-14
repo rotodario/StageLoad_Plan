@@ -1,4 +1,4 @@
-import { Boxes, Columns3, Download, FileJson, FolderOpen, Redo2, RotateCcw, Save, Undo2, View } from "lucide-react";
+import { Boxes, Columns3, Download, FileJson, FolderOpen, Redo2, RotateCcw, Save, Tags, Undo2, View } from "lucide-react";
 import { useRef } from "react";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import { exportPlanJson, parsePlanJson } from "../../utils/exportJson";
@@ -18,8 +18,10 @@ export function TopBar() {
   const plan = useLoadPlanStore((state) => state.plan);
   const activeView = useLoadPlanStore((state) => state.activeView);
   const workspaceMode = useLoadPlanStore((state) => state.workspaceMode);
+  const showLabels = useLoadPlanStore((state) => state.showLabels);
   const setView = useLoadPlanStore((state) => state.setView);
   const setWorkspaceMode = useLoadPlanStore((state) => state.setWorkspaceMode);
+  const toggleLabels = useLoadPlanStore((state) => state.toggleLabels);
   const saveLocal = useLoadPlanStore((state) => state.saveLocal);
   const loadPlan = useLoadPlanStore((state) => state.loadPlan);
   const resetPlan = useLoadPlanStore((state) => state.resetPlan);
@@ -64,6 +66,9 @@ export function TopBar() {
         </button>
         <button className={workspaceMode === "loadwalls" ? "view-btn-active" : "view-btn"} onClick={() => setWorkspaceMode("loadwalls")}>
           <Columns3 size={14} />Paredes
+        </button>
+        <button className={showLabels ? "view-btn-active" : "view-btn"} onClick={toggleLabels} title="Mostrar u ocultar etiquetas">
+          <Tags size={14} />Etiquetas
         </button>
       </div>
       <div className="ml-auto flex items-center gap-1">
