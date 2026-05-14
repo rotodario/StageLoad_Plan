@@ -1,5 +1,5 @@
-import { Boxes, Columns3, Download, FileJson, FolderOpen, Redo2, RotateCcw, Save, Tags, Undo2, View } from "lucide-react";
-import { useRef } from "react";
+import { Boxes, Columns3, Download, FileJson, FolderOpen, Library, Redo2, RotateCcw, Save, Tags, Trash2, Undo2, View } from "lucide-react";
+import { useRef, useState } from "react";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import { exportPlanJson, parsePlanJson } from "../../utils/exportJson";
 import type { ViewPreset } from "../../types/loadplan";
@@ -15,7 +15,9 @@ const views: { id: ViewPreset; label: string }[] = [
 
 export function TopBar() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [projectsOpen, setProjectsOpen] = useState(false);
   const plan = useLoadPlanStore((state) => state.plan);
+  const projectLibrary = useLoadPlanStore((state) => state.projectLibrary);
   const activeView = useLoadPlanStore((state) => state.activeView);
   const workspaceMode = useLoadPlanStore((state) => state.workspaceMode);
   const showLabels = useLoadPlanStore((state) => state.showLabels);
@@ -25,6 +27,9 @@ export function TopBar() {
   const saveLocal = useLoadPlanStore((state) => state.saveLocal);
   const loadPlan = useLoadPlanStore((state) => state.loadPlan);
   const resetPlan = useLoadPlanStore((state) => state.resetPlan);
+  const saveProjectSnapshot = useLoadPlanStore((state) => state.saveProjectSnapshot);
+  const loadProjectSnapshot = useLoadPlanStore((state) => state.loadProjectSnapshot);
+  const deleteProjectSnapshot = useLoadPlanStore((state) => state.deleteProjectSnapshot);
   const undo = useLoadPlanStore((state) => state.undo);
   const redo = useLoadPlanStore((state) => state.redo);
   const canUndo = useLoadPlanStore((state) => state.canUndo);
@@ -52,6 +57,7 @@ export function TopBar() {
         <span className="truncate">{plan.name}</span>
       </div>
       <button className="toolbar-btn" onClick={saveLocal} title="Guardar local"><Save size={16} />Guardar</button>
+      <button className="toolbar-btn" onClick={() => setProjectsOpen((open) => !open)} title="Biblioteca local de proyectos"><Library size={16} />Proyectos</button>
       <button className="toolbar-btn" onClick={() => inputRef.current?.click()} title="Cargar JSON"><FolderOpen size={16} />Cargar</button>
       <button className="toolbar-btn" onClick={exportJson} title="Exportar JSON"><Download size={16} />Exportar</button>
       <button className="toolbar-btn" onClick={resetPlan} title="Nuevo plan"><RotateCcw size={16} />Reset</button>
@@ -79,6 +85,40 @@ export function TopBar() {
           </button>
         ))}
       </div>
+      {projectsOpen && (
+        <div className="absolute left-28 top-11 z-50 w-[360px] rounded border border-cad-border bg-cad-panel p-3 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="panel-title"><Library size={15} />Proyectos locales</h2>
+            <button className="toolbar-btn" onClick={saveProjectSnapshot}><Save size={14} />Guardar snapshot</button>
+          </div>
+          {projectLibrary.length === 0 ? (
+            <p className="text-sm text-cad-muted">No hay proyectos guardados en esta instalacion local.</p>
+          ) : (
+            <div className="max-h-80 space-y-2 overflow-y-auto thin-scrollbar">
+              {projectLibrary.map((project) => (
+                <div key={project.id} className="rounded border border-cad-border bg-cad-panel2 p-2">
+                  <div className="flex items-start gap-2">
+                    <button
+                      className="min-w-0 flex-1 text-left"
+                      onClick={() => {
+                        loadProjectSnapshot(project.id);
+                        setProjectsOpen(false);
+                      }}
+                    >
+                      <div className="truncate text-sm font-medium text-cad-text">{project.name}</div>
+                      <div className="mt-1 text-xs text-cad-muted">{project.truckName} · {project.itemCount} bultos</div>
+                      <div className="mt-1 text-[11px] text-cad-muted">{new Date(project.updatedAt).toLocaleString()}</div>
+                    </button>
+                    <button className="icon-btn danger" title="Borrar snapshot" onClick={() => deleteProjectSnapshot(project.id)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 }

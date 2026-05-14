@@ -1,11 +1,12 @@
 import { create } from "zustand";
-import type { LoadItemInstance, LoadItemTemplate, LoadPlan, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
+import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
 import { boundsIntersect, calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, isInsideTruck, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
 
 const STORAGE_KEY = "stageload-planner-3d-plan";
+const PROJECT_LIBRARY_KEY = "stageload-planner-3d-project-library";
 const HISTORY_LIMIT = 50;
 
 interface LoadPlanStore {
@@ -17,6 +18,7 @@ interface LoadPlanStore {
   activeView: ViewPreset;
   workspaceMode: WorkspaceMode;
   showLabels: boolean;
+  projectLibrary: LocalProjectSummary[];
   report: PlannerReport;
   canUndo: boolean;
   canRedo: boolean;
@@ -41,6 +43,9 @@ interface LoadPlanStore {
   setWorkspaceMode: (mode: WorkspaceMode) => void;
   toggleLabels: () => void;
   saveLocal: () => void;
+  saveProjectSnapshot: () => void;
+  loadProjectSnapshot: (projectId: string) => void;
+  deleteProjectSnapshot: (projectId: string) => void;
   loadPlan: (plan: LoadPlan) => void;
   resetPlan: () => void;
 }
@@ -101,6 +106,33 @@ function initialPlan(): LoadPlan {
 
 const loadedPlan = initialPlan();
 
+function readProjectLibrary(): LoadPlan[] {
+  try {
+    const source = localStorage.getItem(PROJECT_LIBRARY_KEY);
+    return source ? (JSON.parse(source) as LoadPlan[]).map(withDerived) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeProjectLibrary(plans: LoadPlan[]): void {
+  localStorage.setItem(PROJECT_LIBRARY_KEY, JSON.stringify(plans));
+}
+
+function summarizeProjects(plans: LoadPlan[]): LocalProjectSummary[] {
+  return plans
+    .map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      updatedAt: plan.updatedAt,
+      itemCount: plan.items.length,
+      truckName: plan.truck.name,
+    }))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+const loadedProjectLibrary = readProjectLibrary();
+
 function commitPlan(state: LoadPlanStore, plan: LoadPlan, selectedItemId = state.selectedItemId): Partial<LoadPlanStore> {
   const existingIds = new Set(plan.items.map((item) => item.id));
   const selectedItemIds = selectedItemId
@@ -137,6 +169,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   activeView: "iso",
   workspaceMode: "viewport",
   showLabels: true,
+  projectLibrary: summarizeProjects(loadedProjectLibrary),
   report: makeReport(loadedPlan),
   canUndo: false,
   canRedo: false,
@@ -399,6 +432,41 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   saveLocal: () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(get().plan));
   },
+
+  saveProjectSnapshot: () => set((state) => {
+    const plan = withDerived({ ...state.plan, updatedAt: new Date().toISOString() });
+    const library = readProjectLibrary();
+    const withoutCurrent = library.filter((entry) => entry.id !== plan.id);
+    const nextLibrary = [plan, ...withoutCurrent];
+    writeProjectLibrary(nextLibrary);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
+    return { plan, projectLibrary: summarizeProjects(nextLibrary), report: makeReport(plan) };
+  }),
+
+  loadProjectSnapshot: (projectId) => set(() => {
+    const library = readProjectLibrary();
+    const sourcePlan = library.find((entry) => entry.id === projectId);
+    if (!sourcePlan) return {};
+    const plan = withDerived(sourcePlan);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
+    return {
+      plan,
+      selectedItemId: undefined,
+      selectedItemIds: [],
+      pastPlans: [],
+      futurePlans: [],
+      canUndo: false,
+      canRedo: false,
+      projectLibrary: summarizeProjects(library),
+      report: makeReport(plan),
+    };
+  }),
+
+  deleteProjectSnapshot: (projectId) => set(() => {
+    const nextLibrary = readProjectLibrary().filter((entry) => entry.id !== projectId);
+    writeProjectLibrary(nextLibrary);
+    return { projectLibrary: summarizeProjects(nextLibrary) };
+  }),
 
   loadPlan: (nextPlan) => set(() => {
     const plan = withDerived(nextPlan);

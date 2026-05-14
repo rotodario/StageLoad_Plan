@@ -104,3 +104,11 @@ export interface PlannerReport {
   collisions: CollisionWarning[];
   warnings: ValidationWarning[];
 }
+
+export interface LocalProjectSummary {
+  id: string;
+  name: string;
+  updatedAt: string;
+  itemCount: number;
+  truckName: string;
+}

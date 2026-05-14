@@ -61,6 +61,7 @@ Next:
 Status: partially implemented.
 
 - Local save in browser storage.
+- Local project library in browser storage.
 - JSON import/export.
 - PDF payload interface prepared.
 
