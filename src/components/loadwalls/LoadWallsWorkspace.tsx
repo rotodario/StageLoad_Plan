@@ -10,7 +10,7 @@ export function LoadWallsWorkspace() {
   const plan = useLoadPlanStore((state) => state.plan);
   const selectedItemId = useLoadPlanStore((state) => state.selectedItemId);
   const selectItem = useLoadPlanStore((state) => state.selectItem);
-  const walls = useMemo(() => generateLoadWalls(plan.items, plan.templates, plan.truck.lengthMm), [plan]);
+  const walls = useMemo(() => generateLoadWalls(plan.items, plan.templates, plan.truck.lengthMm, plan.wallDepthMm), [plan]);
   const [activeWallNumber, setActiveWallNumber] = useState(1);
   const activeWall = walls.find((wall) => wall.wallNumber === activeWallNumber) ?? walls[0];
 
@@ -22,7 +22,7 @@ export function LoadWallsWorkspace() {
           Paredes de carga
         </h1>
         <div className="text-xs text-cad-muted">
-          Tramos de {formatMeters(1200)} desde puerta hacia fondo
+          Tramos de {formatMeters(plan.wallDepthMm)} desde puerta hacia fondo
         </div>
         <button className="toolbar-btn ml-auto opacity-60" title="Preparado para export PDF" disabled>
           <Printer size={15} />PDF

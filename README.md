@@ -61,6 +61,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Colisiones por bounding boxes.
 - Validaciones de volumen, peso, fuera de camion, flotacion y bloqueo basico de descarga.
 - Paredes de carga generadas por tramos de 1.20 m.
+- Profundidad configurable para paredes de carga: 1.00, 1.20, 1.50, 2.00 o 2.40 m.
 - Workspace dedicado para revisar paredes de carga en vista frontal.
 - Reportes por carga, descarga, departamento y pared.
 - Guardado local, carga JSON y exportacion JSON.

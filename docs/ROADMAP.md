@@ -45,12 +45,12 @@ Status: partially implemented.
 - Weight limit warning.
 - Basic unload-blocking warning.
 - Generated load walls by 1200 mm slices.
+- Configurable load wall depth.
 - Load, unload, department and wall lists.
 - Dedicated load walls workspace with front-view wall review.
 
 Next:
 
-- Custom wall depth.
 - Manual wall notes.
 - Better fragile/stackable validation.
 - Advanced blocked-by analysis using path to door.

@@ -5,7 +5,7 @@ import { LoadWallMiniature } from "./LoadWallMiniature";
 
 export function LoadWallsPanel() {
   const plan = useLoadPlanStore((state) => state.plan);
-  const walls = generateLoadWalls(plan.items, plan.templates, plan.truck.lengthMm);
+  const walls = generateLoadWalls(plan.items, plan.templates, plan.truck.lengthMm, plan.wallDepthMm);
   return (
     <section className="border-b border-cad-border p-3">
       <h2 className="panel-title mb-3"><Columns3 size={15} />Paredes de carga</h2>

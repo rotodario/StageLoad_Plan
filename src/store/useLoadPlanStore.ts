@@ -34,6 +34,7 @@ interface LoadPlanStore {
   duplicateSelectedAbove: () => void;
   deleteSelected: () => void;
   setSnap: (snapMm: number) => void;
+  setWallDepth: (wallDepthMm: number) => void;
   setTruck: (truck: Partial<Truck>) => void;
   setView: (view: ViewPreset) => void;
   setWorkspaceMode: (mode: WorkspaceMode) => void;
@@ -56,15 +57,19 @@ function makeReport(plan: LoadPlan): PlannerReport {
 }
 
 function withDerived(plan: LoadPlan): LoadPlan {
-  const itemsWithWalls = assignLoadWalls(plan.items, plan.templates);
+  const normalizedPlan = {
+    ...plan,
+    wallDepthMm: plan.wallDepthMm || 1200,
+  };
+  const itemsWithWalls = assignLoadWalls(normalizedPlan.items, normalizedPlan.templates, normalizedPlan.wallDepthMm);
   const itemsWithBlocking = itemsWithWalls.map((item) => {
-    const template = plan.templates.find((entry) => entry.id === item.templateId);
+    const template = normalizedPlan.templates.find((entry) => entry.id === item.templateId);
     if (!template) return { ...item, blockedBy: [] };
     const box = getItemBoundingBox(item, template);
     const blockedBy = itemsWithWalls
       .filter((other) => {
         if (other.id === item.id || other.hidden || other.unloadPriority <= item.unloadPriority) return false;
-        const otherTemplate = plan.templates.find((entry) => entry.id === other.templateId);
+        const otherTemplate = normalizedPlan.templates.find((entry) => entry.id === other.templateId);
         if (!otherTemplate) return false;
         const otherBox = getItemBoundingBox(other, otherTemplate);
         const betweenItemAndDoor = otherBox.min.x < box.min.x;
@@ -76,7 +81,7 @@ function withDerived(plan: LoadPlan): LoadPlan {
     return { ...item, blockedBy };
   });
   return {
-    ...plan,
+    ...normalizedPlan,
     items: itemsWithBlocking,
     updatedAt: new Date().toISOString(),
   };
@@ -361,6 +366,11 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
 
   setSnap: (snapMm) => set((state) => {
     const plan = withDerived({ ...state.plan, snapMm });
+    return commitPlan(state, plan);
+  }),
+
+  setWallDepth: (wallDepthMm) => set((state) => {
+    const plan = withDerived({ ...state.plan, wallDepthMm: Math.max(250, wallDepthMm) });
     return commitPlan(state, plan);
   }),
 
