@@ -11,6 +11,7 @@ import { ViewCube } from "./ViewCube";
 import { clampDeltaInsideTruck, getItemsBoundingBox, moveItemsWouldCollide } from "../../utils/geometry";
 import { metersToMm } from "../../utils/units";
 import { analyzeVehicleWeight } from "../../utils/weightAnalysis";
+import { getVehicleVisualBounds } from "../../utils/vehicleGeometry";
 
 export function TruckScene() {
   const controlsRef = useRef<any>(null);
@@ -40,7 +41,12 @@ export function TruckScene() {
   } : undefined;
   const hasMovableSelection = selectedItems.some((item) => !item.locked);
 
-  const truckCenter = useMemo(() => new THREE.Vector3(mmToMeters(plan.truck.lengthMm / 2), mmToMeters(plan.truck.heightMm / 2), mmToMeters(plan.truck.widthMm / 2)), [plan.truck]);
+  const vehicleBounds = useMemo(() => getVehicleVisualBounds(plan.vehicleWeightModel, plan.truck), [plan.truck, plan.vehicleWeightModel]);
+  const viewCenter = useMemo(() => new THREE.Vector3(
+    mmToMeters(vehicleBounds.centerXmm),
+    mmToMeters(vehicleBounds.heightMm / 2),
+    mmToMeters(plan.truck.widthMm / 2),
+  ), [plan.truck.widthMm, vehicleBounds]);
   const weightAnalysis = useMemo(() => analyzeVehicleWeight(plan), [plan]);
   const groupControlKey = activeSelectedIds.join(":");
 
@@ -50,22 +56,26 @@ export function TruckScene() {
   }, []);
 
   useEffect(() => {
-    const length = mmToMeters(plan.truck.lengthMm);
-    const width = mmToMeters(plan.truck.widthMm);
-    const height = mmToMeters(plan.truck.heightMm);
+    const length = mmToMeters(vehicleBounds.lengthMm);
+    const width = mmToMeters(vehicleBounds.widthMm);
+    const height = mmToMeters(vehicleBounds.heightMm);
+    const frontX = mmToMeters(vehicleBounds.frontXmm);
+    const rearX = mmToMeters(vehicleBounds.rearXmm);
+    const sideDistance = Math.max(width * 2.7, length * 0.36);
+    const endDistance = Math.max(length * 0.42, 4);
     const positions: Record<typeof activeView, [number, number, number]> = {
-      iso: [length * 0.95, height * 1.25, width * 2.4],
-      top: [length / 2, Math.max(length, width) * 1.2, width / 2],
-      left: [length / 2, height / 2, -width * 2.4],
-      right: [length / 2, height / 2, width * 3.4],
-      front: [-length * 0.8, height / 2, width / 2],
-      rear: [length * 1.8, height / 2, width / 2],
+      iso: [viewCenter.x + length * 0.58, height * 1.35, viewCenter.z + sideDistance * 0.72],
+      top: [viewCenter.x, Math.max(length, width) * 1.18, viewCenter.z],
+      left: [viewCenter.x, viewCenter.y, viewCenter.z - sideDistance],
+      right: [viewCenter.x, viewCenter.y, viewCenter.z + sideDistance],
+      front: [frontX - endDistance, viewCenter.y, viewCenter.z],
+      rear: [rearX + endDistance, viewCenter.y, viewCenter.z],
     };
     camera.position.set(...positions[activeView]);
-    camera.lookAt(truckCenter);
-    controlsRef.current?.target.copy(truckCenter);
+    camera.lookAt(viewCenter);
+    controlsRef.current?.target.copy(viewCenter);
     controlsRef.current?.update();
-  }, [activeView, camera, plan.truck, truckCenter]);
+  }, [activeView, camera, vehicleBounds, viewCenter]);
 
   function commitTransform() {
     if (!groupDragStartMm) return;
@@ -182,17 +192,17 @@ export function TruckScene() {
           />
       )}
       <ViewCube />
-      <OrbitControls ref={controlsRef} makeDefault target={truckCenter} enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.03} />
+      <OrbitControls ref={controlsRef} makeDefault target={viewCenter} enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.03} />
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[truckCenter.x, -0.006, truckCenter.z]}
+        position={[viewCenter.x, -0.006, mmToMeters(plan.truck.widthMm / 2)]}
         receiveShadow
         onPointerDown={(event) => {
           event.stopPropagation();
           selectItem(undefined);
         }}
       >
-        <planeGeometry args={[mmToMeters(plan.truck.lengthMm), mmToMeters(plan.truck.widthMm)]} />
+        <planeGeometry args={[mmToMeters(vehicleBounds.lengthMm), mmToMeters(plan.truck.widthMm)]} />
         <shadowMaterial transparent opacity={0.16} />
       </mesh>
     </>

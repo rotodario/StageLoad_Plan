@@ -10,6 +10,8 @@ export function ViewCube() {
         <button className="view-btn" onClick={() => setView("top")}>Top</button>
         <button className="view-btn" onClick={() => setView("front")}>Door</button>
         <button className="view-btn" onClick={() => setView("rear")}>Rear</button>
+        <button className="view-btn" onClick={() => setView("left")}>Left</button>
+        <button className="view-btn" onClick={() => setView("right")}>Right</button>
       </div>
     </Html>
   );
