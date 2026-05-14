@@ -5,6 +5,7 @@ import type { LoadWall } from "../../types/loadplan";
 import { getItemBoundingBox } from "../../utils/geometry";
 import { generateLoadWalls } from "../../utils/loadWalls";
 import { formatMeters } from "../../utils/units";
+import { createPrintableWallHtml } from "../../utils/exportHtml";
 
 export function LoadWallsWorkspace() {
   const plan = useLoadPlanStore((state) => state.plan);
@@ -14,6 +15,15 @@ export function LoadWallsWorkspace() {
   const walls = useMemo(() => generateLoadWalls(plan.items, plan.templates, plan.truck.lengthMm, plan.wallDepthMm), [plan]);
   const [activeWallNumber, setActiveWallNumber] = useState(1);
   const activeWall = walls.find((wall) => wall.wallNumber === activeWallNumber) ?? walls[0];
+
+  function printActiveWall() {
+    if (!activeWall) return;
+    const html = createPrintableWallHtml(plan, activeWall);
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  }
 
   return (
     <section className="grid min-h-0 grid-rows-[42px_1fr] bg-[#101216]">
@@ -25,7 +35,7 @@ export function LoadWallsWorkspace() {
         <div className="text-xs text-cad-muted">
           Tramos de {formatMeters(plan.wallDepthMm)} desde puerta hacia fondo
         </div>
-        <button className="toolbar-btn ml-auto opacity-60" title="Preparado para export PDF" disabled>
+        <button className="toolbar-btn ml-auto" title="Imprimir pared activa" onClick={printActiveWall}>
           <Printer size={15} />PDF
         </button>
       </header>

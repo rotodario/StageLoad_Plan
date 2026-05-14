@@ -64,6 +64,7 @@ Status: partially implemented.
 - Local project library in browser storage.
 - JSON import/export.
 - Printable HTML report for browser print/save-as-PDF workflow.
+- Single wall printable report from Load Walls workspace.
 - PDF payload interface prepared.
 
 Next:
