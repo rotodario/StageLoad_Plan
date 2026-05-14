@@ -1,25 +1,25 @@
 import { Edges } from "@react-three/drei";
-import type { CabDimensions } from "./CabTypes";
-import { cabColors, ignoreCabRaycast } from "./CabTypes";
+import type { CabModelContext } from "./CabTypes";
+import { cabPalette, ignoreCabRaycast } from "./CabTypes";
 
 interface Props {
-  cab: CabDimensions;
+  cab: CabModelContext;
 }
 
 export function CabMirrors({ cab }: Props) {
-  const colors = cabColors(cab.sketch);
-  const opacity = cab.mode === "xray" ? 0.35 : 0.9;
+  const colors = cabPalette(cab.sketch);
+  const opacity = cab.mode === "xray" ? 0.34 : 0.9;
   return (
     <group>
       {[-1, 1].map((side) => (
-        <group key={side} position={[-cab.length * 0.26, cab.height * 0.16, side * cab.width * 0.56]}>
+        <group key={side} position={[cab.frontX + cab.length * 0.24, cab.bottomY + cab.height * 0.62, side * (cab.halfWidth + 0.11)]}>
           <mesh rotation={[Math.PI / 2, 0, 0]} raycast={ignoreCabRaycast}>
-            <cylinderGeometry args={[0.018, 0.018, cab.width * 0.08, 8]} />
-            <meshStandardMaterial color={colors.trim} roughness={0.75} transparent opacity={opacity} />
+            <cylinderGeometry args={[0.016, 0.016, 0.22, 8]} />
+            <meshStandardMaterial color={colors.grille} roughness={0.75} transparent opacity={opacity} />
           </mesh>
-          <mesh position={[0, -cab.height * 0.02, side * cab.width * 0.035]} raycast={ignoreCabRaycast}>
-            <boxGeometry args={[cab.length * 0.055, cab.height * 0.12, 0.035]} />
-            <meshStandardMaterial color={colors.detail} roughness={0.42} transparent opacity={opacity} />
+          <mesh position={[0.02, -cab.height * 0.04, side * 0.08]} raycast={ignoreCabRaycast}>
+            <boxGeometry args={[cab.length * 0.055, cab.height * 0.13, 0.04]} />
+            <meshStandardMaterial color={colors.glass} roughness={0.42} transparent opacity={opacity} />
             <Edges color={colors.edge} />
           </mesh>
         </group>

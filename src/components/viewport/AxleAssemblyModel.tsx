@@ -1,6 +1,6 @@
 import type { Truck, VehicleDisplayMode, VehicleWeightModel } from "../../types/loadplan";
 import { mmToMeters } from "../../utils/units";
-import { WheelSetModel } from "./WheelSetModel";
+import { ProfessionalWheelModel } from "./ProfessionalWheelModel";
 
 interface Props {
   truck: Truck;
@@ -24,7 +24,7 @@ export function AxleAssemblyModel({ truck, mode, showWheels, model, sketch }: Pr
             <cylinderGeometry args={[0.06, 0.06, width * 1.08, 16]} />
             <meshStandardMaterial color={color} roughness={0.72} metalness={0.12} />
           </mesh>
-          {showWheels && <WheelSetModel width={width} mode={mode} wheelCount={axle.wheelCount} sketch={sketch} />}
+          {showWheels && <ProfessionalWheelModel width={width} mode={mode} wheelCount={axle.wheelCount} sketch={sketch} />}
         </group>
       ))}
     </group>

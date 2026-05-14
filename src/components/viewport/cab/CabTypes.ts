@@ -2,26 +2,34 @@ import type { VehicleDisplayMode, VehicleWeightModel } from "../../../types/load
 
 export type CabRenderMode = "procedural" | "glb";
 
-export interface CabDimensions {
+export interface CabModelContext {
   length: number;
   width: number;
   height: number;
+  frontX: number;
+  rearX: number;
+  bottomY: number;
+  topY: number;
+  halfWidth: number;
   opacity: number;
   mode: VehicleDisplayMode;
   sketch: boolean;
   model: VehicleWeightModel;
   cabCenterXmm: number;
+  tractorAxleXs: number[];
 }
 
-export function cabColors(sketch: boolean) {
+export function cabPalette(sketch: boolean) {
   return {
-    body: sketch ? "#ededeb" : "#39424f",
-    bodyDark: sketch ? "#c8c8c4" : "#20262e",
-    glass: sketch ? "#d8d8d4" : "#17212b",
-    trim: sketch ? "#161616" : "#151a21",
-    detail: sketch ? "#f7f7f3" : "#aeb7c5",
-    edge: sketch ? "#151515" : "#d6dde8",
-    light: sketch ? "#f4f4f1" : "#f2d28b",
+    body: sketch ? "#f1f0eb" : "#3d4652",
+    bodySide: sketch ? "#e2e1dc" : "#313946",
+    lower: sketch ? "#bfc0bb" : "#20262e",
+    chassis: sketch ? "#1f1f1f" : "#1c2229",
+    glass: sketch ? "#d7d8d4" : "#15202a",
+    grille: sketch ? "#202020" : "#10151b",
+    trim: sketch ? "#343434" : "#aeb7c5",
+    edge: sketch ? "#111111" : "#d6dde8",
+    light: sketch ? "#faf8ec" : "#f0d492",
   };
 }
 
