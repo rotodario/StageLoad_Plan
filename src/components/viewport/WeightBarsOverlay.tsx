@@ -6,22 +6,23 @@ interface Props {
   truck: Truck;
   analysis: VehicleWeightAnalysis;
   showLabels: boolean;
+  sketch: boolean;
 }
 
-export function WeightBarsOverlay({ truck, analysis, showLabels }: Props) {
+export function WeightBarsOverlay({ truck, analysis, showLabels, sketch }: Props) {
   if (analysis.totalLoadKg <= 0) return null;
   const width = mmToMeters(truck.widthMm);
   const kingpinHeight = Math.max(0.12, (analysis.kingpinLoadKg / Math.max(analysis.totalLoadKg, 1)) * 1.6);
   return (
     <group>
-      <Bar x={mmToMeters(analysis.kingpinXmm)} z={width + 0.42} height={kingpinHeight} color="#7aa2f7" label={`KP ${analysis.kingpinLoadKg.toFixed(0)} kg`} showLabel={showLabels} />
+      <Bar x={mmToMeters(analysis.kingpinXmm)} z={width + 0.42} height={kingpinHeight} color={sketch ? "#222222" : "#7aa2f7"} label={`KP ${analysis.kingpinLoadKg.toFixed(0)} kg`} showLabel={showLabels} />
       {analysis.axleLoads.map((axle) => (
         <Bar
           key={axle.axleId}
           x={mmToMeters(axle.xMm)}
           z={width + 0.42}
           height={Math.max(0.12, axle.usage * 1.6)}
-          color={axle.usage > 1 ? "#c94f4f" : axle.usage > 0.85 ? "#f0b75b" : "#3a9b68"}
+          color={sketch ? "#222222" : axle.usage > 1 ? "#c94f4f" : axle.usage > 0.85 ? "#f0b75b" : "#3a9b68"}
           label={`${axle.name} ${axle.loadKg.toFixed(0)} kg`}
           showLabel={showLabels}
         />

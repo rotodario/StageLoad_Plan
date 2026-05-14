@@ -47,6 +47,7 @@ export function TruckScene({ flowMode, flowStep }: Props) {
     z: selectedGroupBounds.min.z + selectedGroupBounds.size.z / 2,
   } : undefined;
   const hasMovableSelection = selectedItems.some((item) => !item.locked);
+  const sketch = vehicleDisplay.visualStyle === "sketch";
 
   const vehicleBounds = useMemo(() => getVehicleVisualBounds(plan.vehicleWeightModel, plan.truck), [plan.truck, plan.vehicleWeightModel]);
   const viewCenter = useMemo(() => new THREE.Vector3(
@@ -123,10 +124,10 @@ export function TruckScene({ flowMode, flowStep }: Props) {
   return (
     <>
       <PerspectiveCamera makeDefault position={[10, 6, 6]} fov={45} />
-      <color attach="background" args={["#101216"]} />
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[5, 8, 4]} intensity={1.8} castShadow shadow-mapSize={[2048, 2048]} />
-      <GridFloor truck={plan.truck} snapMm={plan.snapMm} showLabels={showLabels} />
+      <color attach="background" args={[sketch ? "#f3f1ea" : "#101216"]} />
+      <ambientLight intensity={sketch ? 0.82 : 0.55} />
+      <directionalLight position={[5, 8, 4]} intensity={sketch ? 1.15 : 1.8} castShadow shadow-mapSize={[2048, 2048]} />
+      <GridFloor truck={plan.truck} snapMm={plan.snapMm} showLabels={showLabels} sketch={sketch} />
       <VehicleModel truck={plan.truck} settings={vehicleDisplay} analysis={weightAnalysis} vehicleWeightModel={plan.vehicleWeightModel} showLabels={showLabels} />
       {plan.items.map((item) => {
         const hasCollision = report.collisions.some((collision) => collision.itemAId === item.id || collision.itemBId === item.id);
@@ -143,6 +144,7 @@ export function TruckScene({ flowMode, flowStep }: Props) {
             selectionDisabled={isTransformPointerActiveRef.current}
             showLabel={showLabels}
             flowStatus={flowStatus}
+            sketch={sketch}
             onSelect={(additive, point) => {
               if (isTransformPointerActiveRef.current) return;
               const clickNearGroupGizmo = selectedGroupCenter
@@ -218,7 +220,7 @@ export function TruckScene({ flowMode, flowStep }: Props) {
         }}
       >
         <planeGeometry args={[mmToMeters(vehicleBounds.lengthMm), mmToMeters(plan.truck.widthMm)]} />
-        <shadowMaterial transparent opacity={0.16} />
+        <shadowMaterial transparent opacity={sketch ? 0.08 : 0.16} />
       </mesh>
     </>
   );

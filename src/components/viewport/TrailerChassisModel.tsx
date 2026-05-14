@@ -7,15 +7,16 @@ interface Props {
   truck: Truck;
   mode: VehicleDisplayMode;
   model: VehicleWeightModel;
+  sketch: boolean;
 }
 
-export function TrailerChassisModel({ truck, mode, model }: Props) {
+export function TrailerChassisModel({ truck, mode, model, sketch }: Props) {
   const chassis = getChassisBounds(model, truck);
   const length = mmToMeters(chassis.lengthMm);
   const width = mmToMeters(truck.widthMm);
   const y = -0.22;
   const opacity = mode === "xray" ? 0.75 : 0.95;
-  const railColor = mode === "solid" ? "#252b33" : "#8fb5ff";
+  const railColor = sketch ? "#2b2b2b" : mode === "solid" ? "#252b33" : "#8fb5ff";
   const ignoreRaycast = () => undefined;
 
   return (
@@ -24,7 +25,7 @@ export function TrailerChassisModel({ truck, mode, model }: Props) {
         <mesh key={offset} position={[mmToMeters(chassis.centerXmm), y, width / 2 + offset]} castShadow raycast={ignoreRaycast}>
           <boxGeometry args={[length, 0.12, 0.12]} />
           <meshStandardMaterial color={railColor} roughness={0.8} transparent opacity={opacity} />
-          <Edges color="#c7d2e3" />
+          <Edges color={sketch ? "#111111" : "#c7d2e3"} />
         </mesh>
       ))}
       {Array.from({ length: 8 }, (_, index) => (

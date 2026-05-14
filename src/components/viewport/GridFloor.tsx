@@ -6,9 +6,10 @@ interface Props {
   truck: Truck;
   snapMm: number;
   showLabels: boolean;
+  sketch: boolean;
 }
 
-export function GridFloor({ truck, snapMm, showLabels }: Props) {
+export function GridFloor({ truck, snapMm, showLabels, sketch }: Props) {
   const length = mmToMeters(truck.lengthMm);
   const width = mmToMeters(truck.widthMm);
   return (
@@ -18,10 +19,10 @@ export function GridFloor({ truck, snapMm, showLabels }: Props) {
         args={[length, width]}
         cellSize={mmToMeters(snapMm)}
         cellThickness={0.45}
-        cellColor="#3d4654"
+        cellColor={sketch ? "#b7b7b7" : "#3d4654"}
         sectionSize={1}
         sectionThickness={0.85}
-        sectionColor="#657080"
+        sectionColor={sketch ? "#777777" : "#657080"}
         fadeDistance={40}
         infiniteGrid={false}
       />

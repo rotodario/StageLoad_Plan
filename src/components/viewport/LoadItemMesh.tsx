@@ -14,10 +14,11 @@ interface Props {
   selectionDisabled?: boolean;
   showLabel: boolean;
   flowStatus?: "normal" | "queued" | "active" | "removed";
+  sketch?: boolean;
   onSelect: (additive: boolean, point: THREE.Vector3) => void;
 }
 
-export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh({ item, template, selected, hasCollision, previewDeltaMm, selectionDisabled, showLabel, flowStatus = "normal", onSelect }, ref) {
+export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh({ item, template, selected, hasCollision, previewDeltaMm, selectionDisabled, showLabel, flowStatus = "normal", sketch = false, onSelect }, ref) {
   if (!template || item.hidden) return null;
   if (flowStatus === "queued" || flowStatus === "removed") return null;
   const box = getItemBoundingBox(item, template);
@@ -27,9 +28,9 @@ export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh
     mmToMeters(box.min.y + box.size.y / 2 + (selected ? previewDeltaMm?.y ?? 0 : 0)),
     mmToMeters(box.min.z + box.size.z / 2 + (selected ? previewDeltaMm?.z ?? 0 : 0)),
   ] as const;
-  const color = hasCollision ? "#e14d4d" : item.color ?? template.color;
+  const color = hasCollision ? "#e14d4d" : sketch ? "#f4f4f1" : item.color ?? template.color;
   const opacity = item.locked ? 0.55 : 0.92;
-  const edgeColor = flowStatus === "active" ? "#f0b75b" : selected ? "#ffffff" : hasCollision ? "#ffdddd" : "#1b1f26";
+  const edgeColor = flowStatus === "active" ? "#f0b75b" : selected ? (sketch ? "#111111" : "#ffffff") : hasCollision ? "#ffdddd" : sketch ? "#161616" : "#1b1f26";
   const emissive = flowStatus === "active" ? "#4a3210" : "#000000";
   return (
     <group
@@ -50,7 +51,7 @@ export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh
     >
       <mesh castShadow receiveShadow>
         <boxGeometry args={size} />
-        <meshStandardMaterial color={color} roughness={0.78} metalness={0.04} opacity={opacity} transparent emissive={emissive} emissiveIntensity={flowStatus === "active" ? 0.45 : 0} />
+        <meshStandardMaterial color={color} roughness={0.9} metalness={0} opacity={opacity} transparent emissive={emissive} emissiveIntensity={flowStatus === "active" ? 0.45 : 0} />
         <Edges color={edgeColor} />
       </mesh>
       {showLabel && (

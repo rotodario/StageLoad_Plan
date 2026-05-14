@@ -16,15 +16,16 @@ interface Props {
 }
 
 export function VehicleModel({ truck, settings, analysis, vehicleWeightModel, showLabels }: Props) {
+  const sketch = settings.visualStyle === "sketch";
   return (
     <group>
-      {settings.showCab && <TruckCabModel truck={truck} mode={settings.mode} model={vehicleWeightModel} />}
-      {settings.showTrailerShell && <TrailerShellModel truck={truck} mode={settings.mode} heatmap={settings.showWeightHeatmap} analysis={analysis} model={vehicleWeightModel} />}
-      {settings.showChassis && <TrailerChassisModel truck={truck} mode={settings.mode} model={vehicleWeightModel} />}
-      {settings.showAxles && <AxleAssemblyModel truck={truck} mode={settings.mode} showWheels={settings.showWheels} model={vehicleWeightModel} />}
-      <KingpinMarker truck={truck} analysis={analysis} visible={settings.mode !== "solid"} model={vehicleWeightModel} showLabel={showLabels} />
-      {settings.showCenterOfGravity && <CenterOfGravityMarker analysis={analysis} showLabel={showLabels} />}
-      {settings.showWeightBars && <WeightBarsOverlay truck={truck} analysis={analysis} showLabels={showLabels} />}
+      {settings.showCab && <TruckCabModel truck={truck} mode={settings.mode} model={vehicleWeightModel} sketch={sketch} />}
+      {settings.showTrailerShell && <TrailerShellModel truck={truck} mode={settings.mode} heatmap={settings.showWeightHeatmap && !sketch} analysis={analysis} model={vehicleWeightModel} sketch={sketch} />}
+      {settings.showChassis && <TrailerChassisModel truck={truck} mode={settings.mode} model={vehicleWeightModel} sketch={sketch} />}
+      {settings.showAxles && <AxleAssemblyModel truck={truck} mode={settings.mode} showWheels={settings.showWheels} model={vehicleWeightModel} sketch={sketch} />}
+      <KingpinMarker truck={truck} analysis={analysis} visible={settings.mode !== "solid"} model={vehicleWeightModel} showLabel={showLabels} sketch={sketch} />
+      {settings.showCenterOfGravity && <CenterOfGravityMarker analysis={analysis} showLabel={showLabels} sketch={sketch} />}
+      {settings.showWeightBars && <WeightBarsOverlay truck={truck} analysis={analysis} showLabels={showLabels} sketch={sketch} />}
     </group>
   );
 }

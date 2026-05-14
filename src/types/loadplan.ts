@@ -6,10 +6,13 @@ export type WorkspaceMode = "viewport" | "loadwalls";
 
 export type VehicleDisplayMode = "solid" | "xray" | "hybrid";
 
+export type SceneVisualStyle = "technical" | "sketch";
+
 export type LoadFlowMode = "load" | "unload";
 
 export interface VehicleDisplaySettings {
   mode: VehicleDisplayMode;
+  visualStyle: SceneVisualStyle;
   showCab: boolean;
   showTrailerShell: boolean;
   showChassis: boolean;

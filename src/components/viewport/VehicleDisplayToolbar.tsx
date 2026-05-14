@@ -1,10 +1,10 @@
-import { Activity, Boxes, CircleDot, Eye, Flame, Gauge, ScanLine, Truck } from "lucide-react";
+import { Activity, Boxes, CircleDot, Eye, Flame, Gauge, PenLine, ScanLine, Truck } from "lucide-react";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import type { VehicleDisplayMode, VehicleDisplaySettings } from "../../types/loadplan";
 
 const modes: VehicleDisplayMode[] = ["solid", "xray", "hybrid"];
 
-const layers: Array<{ key: keyof Omit<VehicleDisplaySettings, "mode">; label: string; icon: typeof Eye }> = [
+const layers: Array<{ key: keyof Omit<VehicleDisplaySettings, "mode" | "visualStyle">; label: string; icon: typeof Eye }> = [
   { key: "showCab", label: "Cab", icon: Truck },
   { key: "showTrailerShell", label: "Shell", icon: Boxes },
   { key: "showChassis", label: "Chassis", icon: ScanLine },
@@ -18,6 +18,7 @@ const layers: Array<{ key: keyof Omit<VehicleDisplaySettings, "mode">; label: st
 export function VehicleDisplayToolbar() {
   const settings = useLoadPlanStore((state) => state.vehicleDisplay);
   const setVehicleDisplayMode = useLoadPlanStore((state) => state.setVehicleDisplayMode);
+  const setSceneVisualStyle = useLoadPlanStore((state) => state.setSceneVisualStyle);
   const toggleVehicleLayer = useLoadPlanStore((state) => state.toggleVehicleLayer);
 
   return (
@@ -28,6 +29,14 @@ export function VehicleDisplayToolbar() {
             {mode}
           </button>
         ))}
+        <span className="mx-1 h-5 w-px bg-cad-border" />
+        <button
+          className={settings.visualStyle === "sketch" ? "view-btn-active" : "view-btn"}
+          onClick={() => setSceneVisualStyle(settings.visualStyle === "sketch" ? "technical" : "sketch")}
+          title="Vista boceto blanco y negro"
+        >
+          <PenLine size={13} />Sketch
+        </button>
         <span className="mx-1 h-5 w-px bg-cad-border" />
         {layers.map((layer) => {
           const Icon = layer.icon;

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, Truck, Vector3Mm, VehicleDisplayMode, VehicleDisplaySettings, VehicleWeightModel, ViewPreset, WorkspaceMode } from "../types/loadplan";
+import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, SceneVisualStyle, Truck, Vector3Mm, VehicleDisplayMode, VehicleDisplaySettings, VehicleWeightModel, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
 import { defaultVehicleWeightModel, getVehiclePresetById } from "../data/vehiclePresets";
 import { normalizeVehicleGeometry } from "../utils/vehicleGeometry";
@@ -46,7 +46,8 @@ interface LoadPlanStore {
   setView: (view: ViewPreset) => void;
   setWorkspaceMode: (mode: WorkspaceMode) => void;
   setVehicleDisplayMode: (mode: VehicleDisplayMode) => void;
-  toggleVehicleLayer: (layer: keyof Omit<VehicleDisplaySettings, "mode">) => void;
+  setSceneVisualStyle: (style: SceneVisualStyle) => void;
+  toggleVehicleLayer: (layer: keyof Omit<VehicleDisplaySettings, "mode" | "visualStyle">) => void;
   toggleLabels: () => void;
   saveLocal: () => void;
   saveProjectSnapshot: () => void;
@@ -157,6 +158,7 @@ const loadedProjectLibrary = readProjectLibrary();
 
 const defaultVehicleDisplay: VehicleDisplaySettings = {
   mode: "hybrid",
+  visualStyle: "technical",
   showCab: true,
   showTrailerShell: true,
   showChassis: true,
@@ -470,6 +472,8 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
 
   setVehicleDisplayMode: (mode) => set({ vehicleDisplay: { ...get().vehicleDisplay, mode } }),
+
+  setSceneVisualStyle: (visualStyle) => set({ vehicleDisplay: { ...get().vehicleDisplay, visualStyle } }),
 
   toggleVehicleLayer: (layer) => set((state) => ({
     vehicleDisplay: {
