@@ -3,6 +3,7 @@ import { useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
+import type { LoadFlowMode } from "../../types/loadplan";
 import { mmToMeters } from "../../utils/units";
 import { GridFloor } from "./GridFloor";
 import { LoadItemMesh } from "./LoadItemMesh";
@@ -12,8 +13,14 @@ import { clampDeltaInsideTruck, getItemsBoundingBox, moveItemsWouldCollide } fro
 import { metersToMm } from "../../utils/units";
 import { analyzeVehicleWeight } from "../../utils/weightAnalysis";
 import { getVehicleVisualBounds } from "../../utils/vehicleGeometry";
+import { getLoadOrder, getUnloadOrder } from "../../utils/loadWalls";
 
-export function TruckScene() {
+interface Props {
+  flowMode?: LoadFlowMode;
+  flowStep: number;
+}
+
+export function TruckScene({ flowMode, flowStep }: Props) {
   const controlsRef = useRef<any>(null);
   const groupControlRef = useRef<THREE.Group | null>(null);
   const isTransformPointerActiveRef = useRef(false);
@@ -49,6 +56,11 @@ export function TruckScene() {
   ), [plan.truck.widthMm, vehicleBounds]);
   const weightAnalysis = useMemo(() => analyzeVehicleWeight(plan), [plan]);
   const groupControlKey = activeSelectedIds.join(":");
+  const flowItems = useMemo(() => {
+    if (!flowMode) return [];
+    return (flowMode === "load" ? getLoadOrder(plan.items) : getUnloadOrder(plan.items)).filter((item) => !item.hidden);
+  }, [flowMode, plan.items]);
+  const flowIndexById = useMemo(() => new Map(flowItems.map((item, index) => [item.id, index])), [flowItems]);
 
   const captureGroupControl = useCallback((node: THREE.Group | null) => {
     groupControlRef.current = node;
@@ -118,6 +130,8 @@ export function TruckScene() {
       <VehicleModel truck={plan.truck} settings={vehicleDisplay} analysis={weightAnalysis} vehicleWeightModel={plan.vehicleWeightModel} />
       {plan.items.map((item) => {
         const hasCollision = report.collisions.some((collision) => collision.itemAId === item.id || collision.itemBId === item.id);
+        const flowIndex = flowIndexById.get(item.id);
+        const flowStatus = getFlowStatus(flowMode, flowStep, flowIndex);
         return (
           <LoadItemMesh
             key={item.id}
@@ -128,6 +142,7 @@ export function TruckScene() {
             previewDeltaMm={previewDeltaMm}
             selectionDisabled={isTransformPointerActiveRef.current}
             showLabel={showLabels}
+            flowStatus={flowStatus}
             onSelect={(additive, point) => {
               if (isTransformPointerActiveRef.current) return;
               const clickNearGroupGizmo = selectedGroupCenter
@@ -207,4 +222,14 @@ export function TruckScene() {
       </mesh>
     </>
   );
+}
+
+function getFlowStatus(flowMode: LoadFlowMode | undefined, flowStep: number, flowIndex: number | undefined): "normal" | "queued" | "active" | "removed" {
+  if (!flowMode || flowIndex === undefined) return "normal";
+  if (flowMode === "load") {
+    if (flowIndex === flowStep - 1) return "active";
+    return flowIndex < flowStep ? "normal" : "queued";
+  }
+  if (flowIndex === flowStep) return "active";
+  return flowIndex < flowStep ? "removed" : "normal";
 }

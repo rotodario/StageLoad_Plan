@@ -27,6 +27,8 @@ Status: partially implemented.
 - Multi-selection with group movement and truck-bound clamping.
 - Live movement preview and collision-blocked placement.
 - Duplicate-above shortcut with ceiling and collision checks.
+- Spatial load order from Door, bottom-left to top-right, recalculated after edits.
+- Load/unload flow animation in the 3D viewport.
 - Snap to configurable grid.
 - Snap to truck limits.
 - Basic snap to nearby item faces.

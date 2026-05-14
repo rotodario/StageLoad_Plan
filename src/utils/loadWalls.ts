@@ -10,6 +10,20 @@ export function assignLoadWalls(items: LoadItemInstance[], templates: LoadItemTe
   }));
 }
 
+export function assignSpatialLoadOrder(items: LoadItemInstance[], templates: LoadItemTemplate[]): LoadItemInstance[] {
+  const orderedIds = getSpatialLoadOrder(items, templates).map((item) => item.id);
+  const total = orderedIds.length;
+  const orderById = new Map(orderedIds.map((id, index) => [id, index + 1]));
+  return items.map((item) => {
+    const loadOrder = orderById.get(item.id) ?? item.loadOrder;
+    return {
+      ...item,
+      loadOrder,
+      unloadPriority: total - loadOrder + 1,
+    };
+  });
+}
+
 export function getItemsByWall(items: LoadItemInstance[], wallNumber: number): LoadItemInstance[] {
   return items.filter((item) => item.wallNumber === wallNumber);
 }
@@ -42,4 +56,22 @@ export function getLoadOrder(items: LoadItemInstance[]): LoadItemInstance[] {
 
 export function getUnloadOrder(items: LoadItemInstance[]): LoadItemInstance[] {
   return [...items].sort((a, b) => a.unloadPriority - b.unloadPriority || b.loadOrder - a.loadOrder);
+}
+
+function getSpatialLoadOrder(items: LoadItemInstance[], templates: LoadItemTemplate[]): LoadItemInstance[] {
+  return [...items]
+    .filter((item) => !item.hidden)
+    .sort((a, b) => compareSpatialLoadOrder(a, b, templates));
+}
+
+function compareSpatialLoadOrder(a: LoadItemInstance, b: LoadItemInstance, templates: LoadItemTemplate[]): number {
+  const templateA = templates.find((template) => template.id === a.templateId);
+  const templateB = templates.find((template) => template.id === b.templateId);
+  if (!templateA || !templateB) return a.label.localeCompare(b.label);
+  const boxA = getItemBoundingBox(a, templateA);
+  const boxB = getItemBoundingBox(b, templateB);
+  return boxA.min.x - boxB.min.x
+    || boxA.min.y - boxB.min.y
+    || boxA.min.z - boxB.min.z
+    || a.label.localeCompare(b.label);
 }

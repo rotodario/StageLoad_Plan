@@ -6,6 +6,8 @@ export type WorkspaceMode = "viewport" | "loadwalls";
 
 export type VehicleDisplayMode = "solid" | "xray" | "hybrid";
 
+export type LoadFlowMode = "load" | "unload";
+
 export interface VehicleDisplaySettings {
   mode: VehicleDisplayMode;
   showCab: boolean;

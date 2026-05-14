@@ -4,7 +4,7 @@ import { createDefaultPlan } from "../data/defaultTemplates";
 import { defaultVehicleWeightModel, getVehiclePresetById } from "../data/vehiclePresets";
 import { normalizeVehicleGeometry } from "../utils/vehicleGeometry";
 import { boundsIntersect, calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, isInsideTruck, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
-import { assignLoadWalls } from "../utils/loadWalls";
+import { assignLoadWalls, assignSpatialLoadOrder } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
 
 const STORAGE_KEY = "stageload-planner-3d-plan";
@@ -75,7 +75,8 @@ function withDerived(plan: LoadPlan): LoadPlan {
     wallNotes: plan.wallNotes || {},
     vehicleWeightModel: normalizeVehicleWeightModel(plan.vehicleWeightModel, plan.truck),
   };
-  const itemsWithWalls = assignLoadWalls(normalizedPlan.items, normalizedPlan.templates, normalizedPlan.wallDepthMm);
+  const orderedItems = assignSpatialLoadOrder(normalizedPlan.items, normalizedPlan.templates);
+  const itemsWithWalls = assignLoadWalls(orderedItems, normalizedPlan.templates, normalizedPlan.wallDepthMm);
   const itemsWithBlocking = itemsWithWalls.map((item) => {
     const template = normalizedPlan.templates.find((entry) => entry.id === item.templateId);
     if (!template) return { ...item, blockedBy: [] };
