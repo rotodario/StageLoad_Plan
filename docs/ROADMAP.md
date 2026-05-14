@@ -63,6 +63,7 @@ Status: partially implemented.
 - Local save in browser storage.
 - Local project library in browser storage.
 - JSON import/export.
+- Printable HTML report for browser print/save-as-PDF workflow.
 - PDF payload interface prepared.
 
 Next:

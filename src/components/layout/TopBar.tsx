@@ -1,8 +1,10 @@
-import { Boxes, Columns3, Download, FileJson, FolderOpen, Library, Redo2, RotateCcw, Save, Tags, Trash2, Undo2, View } from "lucide-react";
+import { Boxes, Columns3, Download, FileJson, FolderOpen, Library, Printer, Redo2, RotateCcw, Save, Tags, Trash2, Undo2, View } from "lucide-react";
 import { useRef, useState } from "react";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import { exportPlanJson, parsePlanJson } from "../../utils/exportJson";
 import type { ViewPreset } from "../../types/loadplan";
+import { generateLoadWalls } from "../../utils/loadWalls";
+import { createPrintableHtml } from "../../utils/exportHtml";
 
 const views: { id: ViewPreset; label: string }[] = [
   { id: "iso", label: "Iso" },
@@ -18,6 +20,7 @@ export function TopBar() {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const plan = useLoadPlanStore((state) => state.plan);
   const projectLibrary = useLoadPlanStore((state) => state.projectLibrary);
+  const report = useLoadPlanStore((state) => state.report);
   const activeView = useLoadPlanStore((state) => state.activeView);
   const workspaceMode = useLoadPlanStore((state) => state.workspaceMode);
   const showLabels = useLoadPlanStore((state) => state.showLabels);
@@ -45,6 +48,15 @@ export function TopBar() {
     URL.revokeObjectURL(url);
   }
 
+  function exportPrintableHtml() {
+    const walls = generateLoadWalls(plan.items, plan.templates, plan.truck.lengthMm, plan.wallDepthMm);
+    const html = createPrintableHtml(plan, report, walls);
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  }
+
   async function importJson(file?: File) {
     if (!file) return;
     loadPlan(parsePlanJson(await file.text()));
@@ -60,6 +72,7 @@ export function TopBar() {
       <button className="toolbar-btn" onClick={() => setProjectsOpen((open) => !open)} title="Biblioteca local de proyectos"><Library size={16} />Proyectos</button>
       <button className="toolbar-btn" onClick={() => inputRef.current?.click()} title="Cargar JSON"><FolderOpen size={16} />Cargar</button>
       <button className="toolbar-btn" onClick={exportJson} title="Exportar JSON"><Download size={16} />Exportar</button>
+      <button className="toolbar-btn" onClick={exportPrintableHtml} title="Informe imprimible"><Printer size={16} />Imprimir</button>
       <button className="toolbar-btn" onClick={resetPlan} title="Nuevo plan"><RotateCcw size={16} />Reset</button>
       <input ref={inputRef} type="file" accept="application/json" className="hidden" onChange={(event) => importJson(event.target.files?.[0])} />
       <div className="ml-2 flex items-center gap-1 border-l border-cad-border pl-2">

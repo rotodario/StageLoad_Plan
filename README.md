@@ -68,6 +68,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Reportes por carga, descarga, departamento y pared.
 - Guardado local, carga JSON y exportacion JSON.
 - Biblioteca local de proyectos con snapshots guardados en `localStorage`.
+- Informe HTML imprimible con resumen, alertas, ordenes y paredes de carga.
 - Preparacion de payload para futura exportacion PDF.
 
 ## Siguientes pasos tecnicos
