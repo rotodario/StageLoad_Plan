@@ -8,9 +8,10 @@ interface Props {
   analysis: VehicleWeightAnalysis;
   visible: boolean;
   model: VehicleWeightModel;
+  showLabel: boolean;
 }
 
-export function KingpinMarker({ truck, analysis, visible, model }: Props) {
+export function KingpinMarker({ truck, analysis, visible, model, showLabel }: Props) {
   if (!visible || !shouldShowKingpin(model)) return null;
   const xMm = model.visualGeometry.fifthWheelXmm ?? model.kingpinXmm;
   return (
@@ -19,7 +20,7 @@ export function KingpinMarker({ truck, analysis, visible, model }: Props) {
         <cylinderGeometry args={[0.12, 0.12, 0.04, 24]} />
         <meshStandardMaterial color="#7aa2f7" emissive="#1d3d70" emissiveIntensity={0.35} />
       </mesh>
-      <Html position={[0, 0.35, 0]} center className="axis-label">Kingpin {analysis.kingpinLoadKg.toFixed(0)} kg</Html>
+      {showLabel && <Html position={[0, 0.35, 0]} center className="axis-label">Kingpin {analysis.kingpinLoadKg.toFixed(0)} kg</Html>}
     </group>
   );
 }

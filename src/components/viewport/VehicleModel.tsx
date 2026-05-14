@@ -12,18 +12,19 @@ interface Props {
   settings: VehicleDisplaySettings;
   analysis: VehicleWeightAnalysis;
   vehicleWeightModel: VehicleWeightModel;
+  showLabels: boolean;
 }
 
-export function VehicleModel({ truck, settings, analysis, vehicleWeightModel }: Props) {
+export function VehicleModel({ truck, settings, analysis, vehicleWeightModel, showLabels }: Props) {
   return (
     <group>
       {settings.showCab && <TruckCabModel truck={truck} mode={settings.mode} model={vehicleWeightModel} />}
       {settings.showTrailerShell && <TrailerShellModel truck={truck} mode={settings.mode} heatmap={settings.showWeightHeatmap} analysis={analysis} model={vehicleWeightModel} />}
       {settings.showChassis && <TrailerChassisModel truck={truck} mode={settings.mode} model={vehicleWeightModel} />}
       {settings.showAxles && <AxleAssemblyModel truck={truck} mode={settings.mode} showWheels={settings.showWheels} model={vehicleWeightModel} />}
-      <KingpinMarker truck={truck} analysis={analysis} visible={settings.mode !== "solid"} model={vehicleWeightModel} />
-      {settings.showCenterOfGravity && <CenterOfGravityMarker analysis={analysis} />}
-      {settings.showWeightBars && <WeightBarsOverlay truck={truck} analysis={analysis} />}
+      <KingpinMarker truck={truck} analysis={analysis} visible={settings.mode !== "solid"} model={vehicleWeightModel} showLabel={showLabels} />
+      {settings.showCenterOfGravity && <CenterOfGravityMarker analysis={analysis} showLabel={showLabels} />}
+      {settings.showWeightBars && <WeightBarsOverlay truck={truck} analysis={analysis} showLabels={showLabels} />}
     </group>
   );
 }

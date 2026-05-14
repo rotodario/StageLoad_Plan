@@ -5,9 +5,10 @@ import { mmToMeters } from "../../utils/units";
 interface Props {
   truck: Truck;
   snapMm: number;
+  showLabels: boolean;
 }
 
-export function GridFloor({ truck, snapMm }: Props) {
+export function GridFloor({ truck, snapMm, showLabels }: Props) {
   const length = mmToMeters(truck.lengthMm);
   const width = mmToMeters(truck.widthMm);
   return (
@@ -24,8 +25,8 @@ export function GridFloor({ truck, snapMm }: Props) {
         fadeDistance={40}
         infiniteGrid={false}
       />
-      <Html position={[0, 0.04, 0]} className="axis-label">Door / X0</Html>
-      <Html position={[length, 0.04, width]} className="axis-label">Rear</Html>
+      {showLabels && <Html position={[0, 0.04, 0]} className="axis-label">Door / X0</Html>}
+      {showLabels && <Html position={[length, 0.04, width]} className="axis-label">Rear</Html>}
     </group>
   );
 }
