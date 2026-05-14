@@ -10,6 +10,8 @@ Status: implemented.
 - Orbitable 3D camera and preset views.
 - Left library, right inspector and bottom status bar.
 - Selection, labels and basic object state.
+- Modular vehicle model with cab, shell, chassis, axles, wheels and X-Ray/Hybrid display modes.
+- Initial vehicle weight overlays: CG, kingpin, axle group and heatmap.
 
 ## Phase 2: Manual Placement Tools
 

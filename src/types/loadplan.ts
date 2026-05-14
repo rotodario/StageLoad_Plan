@@ -4,6 +4,20 @@ export type ViewPreset = "iso" | "top" | "left" | "right" | "front" | "rear";
 
 export type WorkspaceMode = "viewport" | "loadwalls";
 
+export type VehicleDisplayMode = "solid" | "xray" | "hybrid";
+
+export interface VehicleDisplaySettings {
+  mode: VehicleDisplayMode;
+  showCab: boolean;
+  showTrailerShell: boolean;
+  showChassis: boolean;
+  showAxles: boolean;
+  showWheels: boolean;
+  showCenterOfGravity: boolean;
+  showWeightBars: boolean;
+  showWeightHeatmap: boolean;
+}
+
 export interface Vector3Mm {
   x: number;
   y: number;
@@ -111,4 +125,16 @@ export interface LocalProjectSummary {
   updatedAt: string;
   itemCount: number;
   truckName: string;
+}
+
+export interface VehicleWeightAnalysis {
+  totalLoadKg: number;
+  centerOfGravityMm: Vector3Mm;
+  kingpinLoadKg: number;
+  axleGroupLoadKg: number;
+  axleLoadsKg: number[];
+  kingpinXmm: number;
+  axleGroupCenterXmm: number;
+  balanceRatio: number;
+  warnings: string[];
 }

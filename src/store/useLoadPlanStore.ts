@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
+import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, Truck, Vector3Mm, VehicleDisplayMode, VehicleDisplaySettings, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
 import { boundsIntersect, calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, isInsideTruck, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
@@ -18,6 +18,7 @@ interface LoadPlanStore {
   activeView: ViewPreset;
   workspaceMode: WorkspaceMode;
   showLabels: boolean;
+  vehicleDisplay: VehicleDisplaySettings;
   projectLibrary: LocalProjectSummary[];
   report: PlannerReport;
   canUndo: boolean;
@@ -41,6 +42,8 @@ interface LoadPlanStore {
   setTruck: (truck: Partial<Truck>) => void;
   setView: (view: ViewPreset) => void;
   setWorkspaceMode: (mode: WorkspaceMode) => void;
+  setVehicleDisplayMode: (mode: VehicleDisplayMode) => void;
+  toggleVehicleLayer: (layer: keyof Omit<VehicleDisplaySettings, "mode">) => void;
   toggleLabels: () => void;
   saveLocal: () => void;
   saveProjectSnapshot: () => void;
@@ -133,6 +136,18 @@ function summarizeProjects(plans: LoadPlan[]): LocalProjectSummary[] {
 
 const loadedProjectLibrary = readProjectLibrary();
 
+const defaultVehicleDisplay: VehicleDisplaySettings = {
+  mode: "hybrid",
+  showCab: true,
+  showTrailerShell: true,
+  showChassis: true,
+  showAxles: true,
+  showWheels: true,
+  showCenterOfGravity: true,
+  showWeightBars: true,
+  showWeightHeatmap: false,
+};
+
 function commitPlan(state: LoadPlanStore, plan: LoadPlan, selectedItemId = state.selectedItemId): Partial<LoadPlanStore> {
   const existingIds = new Set(plan.items.map((item) => item.id));
   const selectedItemIds = selectedItemId
@@ -169,6 +184,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   activeView: "iso",
   workspaceMode: "viewport",
   showLabels: true,
+  vehicleDisplay: defaultVehicleDisplay,
   projectLibrary: summarizeProjects(loadedProjectLibrary),
   report: makeReport(loadedPlan),
   canUndo: false,
@@ -426,6 +442,15 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   setView: (view) => set({ activeView: view }),
 
   setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
+
+  setVehicleDisplayMode: (mode) => set({ vehicleDisplay: { ...get().vehicleDisplay, mode } }),
+
+  toggleVehicleLayer: (layer) => set((state) => ({
+    vehicleDisplay: {
+      ...state.vehicleDisplay,
+      [layer]: !state.vehicleDisplay[layer],
+    },
+  })),
 
   toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
 

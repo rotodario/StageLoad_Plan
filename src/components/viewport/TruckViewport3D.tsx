@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import { TruckScene } from "./TruckScene";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
+import { VehicleDisplayToolbar } from "./VehicleDisplayToolbar";
 
 export function TruckViewport3D() {
   return (
@@ -14,6 +15,7 @@ export function TruckViewport3D() {
       <div className="pointer-events-none absolute left-3 top-3 rounded border border-cad-border bg-cad-panel/85 px-2 py-1 text-xs text-cad-muted">
         1 unidad Three.js = 1 metro · coordenadas internas en mm
       </div>
+      <VehicleDisplayToolbar />
       <KeyboardShortcuts />
     </section>
   );

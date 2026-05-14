@@ -6,10 +6,11 @@ import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import { mmToMeters } from "../../utils/units";
 import { GridFloor } from "./GridFloor";
 import { LoadItemMesh } from "./LoadItemMesh";
-import { TruckModel } from "./TruckModel";
+import { VehicleModel } from "./VehicleModel";
 import { ViewCube } from "./ViewCube";
 import { clampDeltaInsideTruck, getItemsBoundingBox, moveItemsWouldCollide } from "../../utils/geometry";
 import { metersToMm } from "../../utils/units";
+import { analyzeVehicleWeight } from "../../utils/weightAnalysis";
 
 export function TruckScene() {
   const controlsRef = useRef<any>(null);
@@ -25,6 +26,7 @@ export function TruckScene() {
   const selectedItemId = useLoadPlanStore((state) => state.selectedItemId);
   const selectedItemIds = useLoadPlanStore((state) => state.selectedItemIds);
   const showLabels = useLoadPlanStore((state) => state.showLabels);
+  const vehicleDisplay = useLoadPlanStore((state) => state.vehicleDisplay);
   const selectItem = useLoadPlanStore((state) => state.selectItem);
   const moveSelectedByDelta = useLoadPlanStore((state) => state.moveSelectedByDelta);
   const report = useLoadPlanStore((state) => state.report);
@@ -39,6 +41,7 @@ export function TruckScene() {
   const hasMovableSelection = selectedItems.some((item) => !item.locked);
 
   const truckCenter = useMemo(() => new THREE.Vector3(mmToMeters(plan.truck.lengthMm / 2), mmToMeters(plan.truck.heightMm / 2), mmToMeters(plan.truck.widthMm / 2)), [plan.truck]);
+  const weightAnalysis = useMemo(() => analyzeVehicleWeight(plan), [plan]);
   const groupControlKey = activeSelectedIds.join(":");
 
   const captureGroupControl = useCallback((node: THREE.Group | null) => {
@@ -102,7 +105,7 @@ export function TruckScene() {
       <ambientLight intensity={0.55} />
       <directionalLight position={[5, 8, 4]} intensity={1.8} castShadow shadow-mapSize={[2048, 2048]} />
       <GridFloor truck={plan.truck} snapMm={plan.snapMm} />
-      <TruckModel truck={plan.truck} />
+      <VehicleModel truck={plan.truck} settings={vehicleDisplay} analysis={weightAnalysis} />
       {plan.items.map((item) => {
         const hasCollision = report.collisions.some((collision) => collision.itemAId === item.id || collision.itemBId === item.id);
         return (
