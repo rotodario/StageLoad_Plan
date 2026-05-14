@@ -19,6 +19,7 @@ Status: partially implemented.
 - Move with keyboard nudges.
 - Undo/redo for plan edits.
 - Free-position placement when adding or duplicating items.
+- Multi-selection with group movement and truck-bound clamping.
 - Snap to configurable grid.
 - Snap to truck limits.
 - Basic snap to nearby item faces.
@@ -28,7 +29,6 @@ Status: partially implemented.
 Next:
 
 - Axis and plane constraints.
-- Multi-selection.
 - Measurement tool.
 - Better selection when objects overlap.
 - Undo/redo history.

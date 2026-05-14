@@ -52,6 +52,49 @@ export function clampInsideTruck(position: Vector3Mm, size: Vector3Mm, truck: Tr
   };
 }
 
+export function getItemsBoundingBox(
+  items: LoadItemInstance[],
+  templates: LoadItemTemplate[],
+): BoundsMm | undefined {
+  const boxes = items
+    .map((item) => {
+      const template = templates.find((entry) => entry.id === item.templateId);
+      return template ? getItemBoundingBox(item, template) : undefined;
+    })
+    .filter((box): box is BoundsMm => Boolean(box));
+
+  if (boxes.length === 0) return undefined;
+
+  const min = {
+    x: Math.min(...boxes.map((box) => box.min.x)),
+    y: Math.min(...boxes.map((box) => box.min.y)),
+    z: Math.min(...boxes.map((box) => box.min.z)),
+  };
+  const max = {
+    x: Math.max(...boxes.map((box) => box.max.x)),
+    y: Math.max(...boxes.map((box) => box.max.y)),
+    z: Math.max(...boxes.map((box) => box.max.z)),
+  };
+
+  return {
+    min,
+    max,
+    size: {
+      x: max.x - min.x,
+      y: max.y - min.y,
+      z: max.z - min.z,
+    },
+  };
+}
+
+export function clampDeltaInsideTruck(bounds: BoundsMm, delta: Vector3Mm, truck: Truck): Vector3Mm {
+  return {
+    x: Math.min(Math.max(delta.x, -bounds.min.x), truck.lengthMm - bounds.max.x),
+    y: Math.min(Math.max(delta.y, -bounds.min.y), truck.heightMm - bounds.max.y),
+    z: Math.min(Math.max(delta.z, -bounds.min.z), truck.widthMm - bounds.max.z),
+  };
+}
+
 export function snapToNearbyFaces(
   item: LoadItemInstance,
   template: LoadItemTemplate,

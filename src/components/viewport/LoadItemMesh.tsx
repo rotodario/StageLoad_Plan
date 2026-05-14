@@ -10,7 +10,7 @@ interface Props {
   template?: LoadItemTemplate;
   selected: boolean;
   hasCollision: boolean;
-  onSelect: () => void;
+  onSelect: (additive: boolean) => void;
 }
 
 export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh({ item, template, selected, hasCollision, onSelect }, ref) {
@@ -29,7 +29,7 @@ export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh
       position={center}
       onPointerDown={(event) => {
         event.stopPropagation();
-        onSelect();
+        onSelect(event.shiftKey);
       }}
       onPointerOver={(event) => {
         event.stopPropagation();

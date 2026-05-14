@@ -7,6 +7,7 @@ const departments: Department[] = ["lighting", "audio", "video", "rigging", "cab
 export function ItemPropertiesPanel() {
   const plan = useLoadPlanStore((state) => state.plan);
   const selectedItemId = useLoadPlanStore((state) => state.selectedItemId);
+  const selectedItemIds = useLoadPlanStore((state) => state.selectedItemIds);
   const updateItem = useLoadPlanStore((state) => state.updateItem);
   const moveItem = useLoadPlanStore((state) => state.moveItem);
   const rotateSelected90 = useLoadPlanStore((state) => state.rotateSelected90);
@@ -14,6 +15,7 @@ export function ItemPropertiesPanel() {
   const deleteSelected = useLoadPlanStore((state) => state.deleteSelected);
   const item = plan.items.find((entry) => entry.id === selectedItemId);
   const template = item ? plan.templates.find((entry) => entry.id === item.templateId) : undefined;
+  const isMultiSelection = selectedItemIds.length > 1;
 
   function setNumber(field: keyof LoadItemInstance["position"], value: string) {
     if (!item) return;
@@ -32,13 +34,18 @@ export function ItemPropertiesPanel() {
   return (
     <section className="border-b border-cad-border p-3">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="panel-title">Objeto seleccionado</h2>
+        <h2 className="panel-title">{isMultiSelection ? `${selectedItemIds.length} objetos seleccionados` : "Objeto seleccionado"}</h2>
         <div className="flex gap-1">
           <button className="icon-btn" onClick={rotateSelected90} title="Rotar 90 grados"><RotateCw size={15} /></button>
           <button className="icon-btn" onClick={duplicateSelected} title="Duplicar"><Copy size={15} /></button>
           <button className="icon-btn danger" onClick={deleteSelected} title="Eliminar"><Trash2 size={15} /></button>
         </div>
       </div>
+      {isMultiSelection && (
+        <div className="mb-3 rounded border border-cad-border bg-cad-panel2 p-2 text-xs text-cad-muted">
+          El gizmo mueve la seleccion como un grupo. El inspector muestra el ultimo bulto seleccionado.
+        </div>
+      )}
       <label className="field-label">Etiqueta</label>
       <input className="field-input" value={item.label} onChange={(event) => updateItem(item.id, { label: event.target.value })} />
       <div className="mt-3 grid grid-cols-3 gap-2">

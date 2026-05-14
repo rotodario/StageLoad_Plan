@@ -8,23 +8,39 @@ import { GridFloor } from "./GridFloor";
 import { LoadItemMesh } from "./LoadItemMesh";
 import { TruckModel } from "./TruckModel";
 import { ViewCube } from "./ViewCube";
-import { getItemBoundingBox } from "../../utils/geometry";
+import { clampDeltaInsideTruck, getItemsBoundingBox } from "../../utils/geometry";
 import { metersToMm } from "../../utils/units";
 
 export function TruckScene() {
   const controlsRef = useRef<any>(null);
-  const [selectedObject, setSelectedObject] = useState<THREE.Group | null>(null);
+  const groupControlRef = useRef<THREE.Group | null>(null);
+  const [groupControlObject, setGroupControlObject] = useState<THREE.Group | null>(null);
+  const [groupDragStartMm, setGroupDragStartMm] = useState<THREE.Vector3 | null>(null);
   const { camera } = useThree();
   const plan = useLoadPlanStore((state) => state.plan);
   const activeView = useLoadPlanStore((state) => state.activeView);
   const selectedItemId = useLoadPlanStore((state) => state.selectedItemId);
+  const selectedItemIds = useLoadPlanStore((state) => state.selectedItemIds);
   const selectItem = useLoadPlanStore((state) => state.selectItem);
-  const moveItem = useLoadPlanStore((state) => state.moveItem);
+  const moveSelectedByDelta = useLoadPlanStore((state) => state.moveSelectedByDelta);
   const report = useLoadPlanStore((state) => state.report);
-  const selectedItem = plan.items.find((item) => item.id === selectedItemId);
-  const selectedTemplate = selectedItem ? plan.templates.find((template) => template.id === selectedItem.templateId) : undefined;
+  const activeSelectedIds = selectedItemIds.length > 0 ? selectedItemIds : selectedItemId ? [selectedItemId] : [];
+  const selectedItems = plan.items.filter((item) => activeSelectedIds.includes(item.id));
+  const selectedGroupBounds = getItemsBoundingBox(selectedItems, plan.templates);
+  const selectedGroupCenter = selectedGroupBounds ? {
+    x: selectedGroupBounds.min.x + selectedGroupBounds.size.x / 2,
+    y: selectedGroupBounds.min.y + selectedGroupBounds.size.y / 2,
+    z: selectedGroupBounds.min.z + selectedGroupBounds.size.z / 2,
+  } : undefined;
+  const hasMovableSelection = selectedItems.some((item) => !item.locked);
 
   const truckCenter = useMemo(() => new THREE.Vector3(mmToMeters(plan.truck.lengthMm / 2), mmToMeters(plan.truck.heightMm / 2), mmToMeters(plan.truck.widthMm / 2)), [plan.truck]);
+  const groupControlKey = activeSelectedIds.join(":");
+
+  const captureGroupControl = useCallback((node: THREE.Group | null) => {
+    groupControlRef.current = node;
+    setGroupControlObject(node);
+  }, []);
 
   useEffect(() => {
     const length = mmToMeters(plan.truck.lengthMm);
@@ -44,22 +60,29 @@ export function TruckScene() {
     controlsRef.current?.update();
   }, [activeView, camera, plan.truck, truckCenter]);
 
-  useEffect(() => {
-    setSelectedObject(null);
-  }, [selectedItemId]);
-
-  const captureSelectedObject = useCallback((node: THREE.Group | null) => {
-    if (node) setSelectedObject(node);
-  }, []);
-
   function commitTransform() {
-    if (!selectedItem || !selectedTemplate || !selectedObject) return;
-    const box = getItemBoundingBox(selectedItem, selectedTemplate);
-    moveItem(selectedItem.id, {
-      x: metersToMm(selectedObject.position.x) - box.size.x / 2,
-      y: metersToMm(selectedObject.position.y) - box.size.y / 2,
-      z: metersToMm(selectedObject.position.z) - box.size.z / 2,
+    if (!groupControlRef.current || !groupDragStartMm) return;
+    moveSelectedByDelta({
+      x: metersToMm(groupControlRef.current.position.x) - groupDragStartMm.x,
+      y: metersToMm(groupControlRef.current.position.y) - groupDragStartMm.y,
+      z: metersToMm(groupControlRef.current.position.z) - groupDragStartMm.z,
     });
+    setGroupDragStartMm(null);
+  }
+
+  function clampGroupControlPosition() {
+    if (!groupControlObject || !groupDragStartMm || !selectedGroupBounds) return;
+    const delta = {
+      x: metersToMm(groupControlObject.position.x) - groupDragStartMm.x,
+      y: metersToMm(groupControlObject.position.y) - groupDragStartMm.y,
+      z: metersToMm(groupControlObject.position.z) - groupDragStartMm.z,
+    };
+    const safeDelta = clampDeltaInsideTruck(selectedGroupBounds, delta, plan.truck);
+    groupControlObject.position.set(
+      mmToMeters(groupDragStartMm.x + safeDelta.x),
+      mmToMeters(groupDragStartMm.y + safeDelta.y),
+      mmToMeters(groupDragStartMm.z + safeDelta.z),
+    );
   }
 
   return (
@@ -75,32 +98,40 @@ export function TruckScene() {
         return (
           <LoadItemMesh
             key={item.id}
-            ref={item.id === selectedItemId ? captureSelectedObject : undefined}
             item={item}
             template={plan.templates.find((template) => template.id === item.templateId)}
-            selected={item.id === selectedItemId}
+            selected={activeSelectedIds.includes(item.id)}
             hasCollision={hasCollision}
-            onSelect={() => selectItem(item.id)}
+            onSelect={(additive) => selectItem(item.id, additive)}
           />
         );
       })}
-      {selectedItem && selectedTemplate && selectedObject && !selectedItem.locked && (
-        <TransformControls
-          object={selectedObject}
-          mode="translate"
-          space="world"
-          size={0.75}
-          showX
-          showY
-          showZ
-          onMouseUp={() => {
-            commitTransform();
-            if (controlsRef.current) controlsRef.current.enabled = true;
-          }}
-          onMouseDown={() => {
-            if (controlsRef.current) controlsRef.current.enabled = false;
-          }}
+      {selectedGroupCenter && (
+        <group
+          key={groupControlKey}
+          ref={captureGroupControl}
+          position={[mmToMeters(selectedGroupCenter.x), mmToMeters(selectedGroupCenter.y), mmToMeters(selectedGroupCenter.z)]}
         />
+      )}
+      {selectedGroupCenter && groupControlObject && hasMovableSelection && (
+          <TransformControls
+            object={groupControlObject}
+            mode="translate"
+            space="world"
+            size={0.75}
+            showX
+            showY
+            showZ
+            onMouseUp={() => {
+              commitTransform();
+              if (controlsRef.current) controlsRef.current.enabled = true;
+            }}
+            onMouseDown={() => {
+              setGroupDragStartMm(new THREE.Vector3(selectedGroupCenter.x, selectedGroupCenter.y, selectedGroupCenter.z));
+              if (controlsRef.current) controlsRef.current.enabled = false;
+            }}
+            onObjectChange={clampGroupControlPosition}
+          />
       )}
       <ViewCube />
       <OrbitControls ref={controlsRef} makeDefault target={truckCenter} enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.03} />

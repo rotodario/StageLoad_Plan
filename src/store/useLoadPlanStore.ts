@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { LoadItemInstance, LoadItemTemplate, LoadPlan, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
-import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getRotatedSize, snapToNearbyFaces, snapVector } from "../utils/geometry";
+import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
 
@@ -13,6 +13,7 @@ interface LoadPlanStore {
   pastPlans: LoadPlan[];
   futurePlans: LoadPlan[];
   selectedItemId?: string;
+  selectedItemIds: string[];
   activeView: ViewPreset;
   workspaceMode: WorkspaceMode;
   report: PlannerReport;
@@ -22,9 +23,10 @@ interface LoadPlanStore {
   redo: () => void;
   addTemplate: (template: Omit<LoadItemTemplate, "id">) => void;
   addItemFromTemplate: (templateId: string) => void;
-  selectItem: (itemId?: string) => void;
+  selectItem: (itemId?: string, additive?: boolean) => void;
   updateItem: (itemId: string, patch: Partial<LoadItemInstance>) => void;
   moveItem: (itemId: string, position: Vector3Mm, clamp?: boolean) => void;
+  moveSelectedByDelta: (delta: Vector3Mm) => void;
   nudgeSelected: (axis: keyof Vector3Mm, direction: -1 | 1) => void;
   rotateSelected90: () => void;
   duplicateSelected: () => void;
@@ -90,9 +92,15 @@ function initialPlan(): LoadPlan {
 const loadedPlan = initialPlan();
 
 function commitPlan(state: LoadPlanStore, plan: LoadPlan, selectedItemId = state.selectedItemId): Partial<LoadPlanStore> {
+  const existingIds = new Set(plan.items.map((item) => item.id));
+  const selectedItemIds = selectedItemId
+    ? (state.selectedItemIds.includes(selectedItemId) ? state.selectedItemIds : [selectedItemId]).filter((id) => existingIds.has(id))
+    : [];
+  const nextSelectedItemId = selectedItemId && existingIds.has(selectedItemId) ? selectedItemId : selectedItemIds[selectedItemIds.length - 1];
   return {
     plan,
-    selectedItemId,
+    selectedItemId: nextSelectedItemId,
+    selectedItemIds,
     pastPlans: [...state.pastPlans, state.plan].slice(-HISTORY_LIMIT),
     futurePlans: [],
     canUndo: true,
@@ -101,11 +109,21 @@ function commitPlan(state: LoadPlanStore, plan: LoadPlan, selectedItemId = state
   };
 }
 
+function snapDelta(delta: Vector3Mm, snapMm: number): Vector3Mm {
+  const snap = Math.max(snapMm, 1);
+  return {
+    x: Math.round(delta.x / snap) * snap,
+    y: Math.round(delta.y / snap) * snap,
+    z: Math.round(delta.z / snap) * snap,
+  };
+}
+
 export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   plan: loadedPlan,
   pastPlans: [],
   futurePlans: [],
   selectedItemId: undefined,
+  selectedItemIds: [],
   activeView: "iso",
   workspaceMode: "viewport",
   report: makeReport(loadedPlan),
@@ -119,6 +137,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     return {
       plan: previousPlan,
       selectedItemId: undefined,
+      selectedItemIds: [],
       pastPlans,
       futurePlans: [state.plan, ...state.futurePlans].slice(0, HISTORY_LIMIT),
       canUndo: pastPlans.length > 0,
@@ -134,6 +153,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     return {
       plan: nextPlan,
       selectedItemId: undefined,
+      selectedItemIds: [],
       pastPlans: [...state.pastPlans, state.plan].slice(-HISTORY_LIMIT),
       futurePlans,
       canUndo: true,
@@ -174,7 +194,19 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     return commitPlan(state, plan, nextItem.id);
   }),
 
-  selectItem: (itemId) => set({ selectedItemId: itemId }),
+  selectItem: (itemId, additive = false) => set((state) => {
+    if (!itemId) return { selectedItemId: undefined, selectedItemIds: [] };
+    if (!additive) return { selectedItemId: itemId, selectedItemIds: [itemId] };
+
+    const alreadySelected = state.selectedItemIds.includes(itemId);
+    const selectedItemIds = alreadySelected
+      ? state.selectedItemIds.filter((id) => id !== itemId)
+      : [...state.selectedItemIds, itemId];
+    return {
+      selectedItemId: selectedItemIds[selectedItemIds.length - 1],
+      selectedItemIds,
+    };
+  }),
 
   updateItem: (itemId, patch) => set((state) => {
     const plan = withDerived({
@@ -199,20 +231,46 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     return commitPlan(state, plan);
   }),
 
-  nudgeSelected: (axis, direction) => set((state) => {
-    const selected = state.plan.items.find((item) => item.id === state.selectedItemId);
-    if (!selected || selected.locked) return state;
-    const nextPosition = {
-      ...selected.position,
-      [axis]: selected.position[axis] + state.plan.snapMm * direction,
-    };
-    const template = state.plan.templates.find((entry) => entry.id === selected.templateId);
-    if (!template) return state;
-    const snappedToFaces = snapToNearbyFaces(selected, template, snapVector(nextPosition, state.plan.snapMm), state.plan.items, state.plan.templates, state.plan.snapMm);
-    const position = clampInsideTruck(snappedToFaces, getRotatedSize(template, selected.rotation), state.plan.truck);
+  moveSelectedByDelta: (delta) => set((state) => {
+    const selectedIds = state.selectedItemIds.length > 0 ? state.selectedItemIds : state.selectedItemId ? [state.selectedItemId] : [];
+    const selectedItems = state.plan.items.filter((item) => selectedIds.includes(item.id) && !item.locked);
+    if (selectedItems.length === 0) return state;
+
+    const snappedDelta = snapDelta(delta, state.plan.snapMm);
+    const groupBounds = getItemsBoundingBox(selectedItems, state.plan.templates);
+    if (!groupBounds) return state;
+    const safeDelta = clampDeltaInsideTruck(groupBounds, snappedDelta, state.plan.truck);
+
     const plan = withDerived({
       ...state.plan,
-      items: state.plan.items.map((item) => item.id === selected.id ? { ...item, position } : item),
+      items: state.plan.items.map((item) => selectedIds.includes(item.id) && !item.locked
+        ? {
+          ...item,
+          position: {
+            x: item.position.x + safeDelta.x,
+            y: item.position.y + safeDelta.y,
+            z: item.position.z + safeDelta.z,
+          },
+        }
+        : item),
+    });
+    return commitPlan(state, plan);
+  }),
+
+  nudgeSelected: (axis, direction) => set((state) => {
+    const selectedIds = state.selectedItemIds.length > 0 ? state.selectedItemIds : state.selectedItemId ? [state.selectedItemId] : [];
+    const selectedItems = state.plan.items.filter((item) => selectedIds.includes(item.id) && !item.locked);
+    if (selectedItems.length === 0) return state;
+    const delta: Vector3Mm = { x: 0, y: 0, z: 0 };
+    delta[axis] = state.plan.snapMm * direction;
+    const groupBounds = getItemsBoundingBox(selectedItems, state.plan.templates);
+    if (!groupBounds) return state;
+    const safeDelta = clampDeltaInsideTruck(groupBounds, delta, state.plan.truck);
+    const plan = withDerived({
+      ...state.plan,
+      items: state.plan.items.map((item) => selectedIds.includes(item.id) && !item.locked
+        ? { ...item, position: { x: item.position.x + safeDelta.x, y: item.position.y + safeDelta.y, z: item.position.z + safeDelta.z } }
+        : item),
     });
     return commitPlan(state, plan);
   }),
@@ -249,8 +307,9 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   }),
 
   deleteSelected: () => set((state) => {
-    if (!state.selectedItemId) return state;
-    const plan = withDerived({ ...state.plan, items: state.plan.items.filter((item) => item.id !== state.selectedItemId) });
+    const selectedIds = state.selectedItemIds.length > 0 ? state.selectedItemIds : state.selectedItemId ? [state.selectedItemId] : [];
+    if (selectedIds.length === 0) return state;
+    const plan = withDerived({ ...state.plan, items: state.plan.items.filter((item) => !selectedIds.includes(item.id)) });
     return commitPlan(state, plan, undefined);
   }),
 
@@ -275,12 +334,12 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   loadPlan: (nextPlan) => set(() => {
     const plan = withDerived(nextPlan);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
-    return { plan, selectedItemId: undefined, pastPlans: [], futurePlans: [], canUndo: false, canRedo: false, report: makeReport(plan) };
+    return { plan, selectedItemId: undefined, selectedItemIds: [], pastPlans: [], futurePlans: [], canUndo: false, canRedo: false, report: makeReport(plan) };
   }),
 
   resetPlan: () => set(() => {
     const plan = createDefaultPlan();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
-    return { plan, selectedItemId: undefined, pastPlans: [], futurePlans: [], canUndo: false, canRedo: false, report: makeReport(plan) };
+    return { plan, selectedItemId: undefined, selectedItemIds: [], pastPlans: [], futurePlans: [], canUndo: false, canRedo: false, report: makeReport(plan) };
   }),
 }));

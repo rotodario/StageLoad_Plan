@@ -51,6 +51,8 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Colocacion manual de bultos con busqueda de hueco libre al añadir o duplicar.
 - Snap a grid, paredes y caras cercanas de otros bultos.
 - Seleccion, movimiento, rotacion 90 grados, duplicado, borrado, bloqueo y ocultacion.
+- Multi-seleccion con `Shift+click` y movimiento de grupo desde un gizmo centrado.
+- Restriccion de movimiento para impedir que bultos o grupos salgan del camion.
 - Undo/redo para cambios de plan, con botones y atajos `Ctrl+Z` / `Ctrl+Y`.
 - Colisiones por bounding boxes.
 - Validaciones de volumen, peso, fuera de camion, flotacion y bloqueo basico de descarga.
