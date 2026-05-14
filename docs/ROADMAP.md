@@ -1,0 +1,79 @@
+# Roadmap
+
+## Phase 1: Visual CAD Base
+
+Status: implemented.
+
+- Professional dark CAD-style layout.
+- Transparent truck volume with technical grid.
+- Real-dimension item meshes.
+- Orbitable 3D camera and preset views.
+- Left library, right inspector and bottom status bar.
+- Selection, labels and basic object state.
+
+## Phase 2: Manual Placement Tools
+
+Status: partially implemented.
+
+- Move with transform gizmo.
+- Move with keyboard nudges.
+- Snap to configurable grid.
+- Snap to truck limits.
+- Basic snap to nearby item faces.
+- Rotate selected item in 90-degree increments.
+- Duplicate, delete, lock and hide items.
+
+Next:
+
+- Axis and plane constraints.
+- Multi-selection.
+- Measurement tool.
+- Better selection when objects overlap.
+- Undo/redo history.
+
+## Phase 3: Validation and Load Walls
+
+Status: partially implemented.
+
+- Collision detection by bounding boxes.
+- Outside-truck warnings.
+- Floating-item warnings.
+- Weight limit warning.
+- Basic unload-blocking warning.
+- Generated load walls by 1200 mm slices.
+- Load, unload, department and wall lists.
+
+Next:
+
+- Full-screen load wall workspace.
+- Custom wall depth.
+- Manual wall notes.
+- Better fragile/stackable validation.
+- Advanced blocked-by analysis using path to door.
+
+## Phase 4: Persistence and Export
+
+Status: partially implemented.
+
+- Local save in browser storage.
+- JSON import/export.
+- PDF payload interface prepared.
+
+Next:
+
+- IndexedDB project library.
+- PDF export with plan summary and wall pages.
+- Print stylesheet for technical reports.
+- Versioned plan migrations.
+
+## Phase 5: Production Features
+
+Future.
+
+- Auto-pack suggestion engine.
+- Optimization by volume, weight, department and unload priority.
+- Template library presets.
+- Truck presets.
+- Project metadata: tour, venue, date, company and crew notes.
+- Shared project format.
+- Optional backend sync.
