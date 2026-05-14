@@ -105,7 +105,7 @@ export function TruckScene() {
       <ambientLight intensity={0.55} />
       <directionalLight position={[5, 8, 4]} intensity={1.8} castShadow shadow-mapSize={[2048, 2048]} />
       <GridFloor truck={plan.truck} snapMm={plan.snapMm} />
-      <VehicleModel truck={plan.truck} settings={vehicleDisplay} analysis={weightAnalysis} />
+      <VehicleModel truck={plan.truck} settings={vehicleDisplay} analysis={weightAnalysis} vehicleWeightModel={plan.vehicleWeightModel} />
       {plan.items.map((item) => {
         const hasCollision = report.collisions.some((collision) => collision.itemAId === item.id || collision.itemBId === item.id);
         return (

@@ -49,6 +49,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Modelo 3D modular de vehiculo: cabina, trailer, chasis, ejes, ruedas, kingpin y CG.
 - Modos visuales `solid`, `xray` y `hybrid`, con toggles por capa.
 - Analisis visual inicial: centro de gravedad, reparto kingpin/ejes, barras de peso y heatmap.
+- Modelo de peso configurable con presets de vehiculo, ejes, grupos, limites y warnings.
 - Grid tecnico y camara orbitable.
 - Toggle superior para mostrar u ocultar etiquetas de bultos.
 - Biblioteca de elementos y creacion de plantillas.

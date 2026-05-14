@@ -1,4 +1,5 @@
 import type { LoadItemTemplate, LoadPlan, Truck } from "../types/loadplan";
+import { defaultVehicleWeightModel } from "./vehiclePresets";
 
 export const departmentColors = {
   lighting: "#d9912b",
@@ -45,5 +46,6 @@ export function createDefaultPlan(): LoadPlan {
     snapMm: 100,
     wallDepthMm: 1200,
     wallNotes: {},
+    vehicleWeightModel: defaultVehicleWeightModel,
   };
 }

@@ -11,11 +11,19 @@ export function WeightBarsOverlay({ truck, analysis }: Props) {
   if (analysis.totalLoadKg <= 0) return null;
   const width = mmToMeters(truck.widthMm);
   const kingpinHeight = Math.max(0.12, (analysis.kingpinLoadKg / Math.max(analysis.totalLoadKg, 1)) * 1.6);
-  const axleHeight = Math.max(0.12, (analysis.axleGroupLoadKg / Math.max(analysis.totalLoadKg, 1)) * 1.6);
   return (
     <group>
       <Bar x={mmToMeters(analysis.kingpinXmm)} z={width + 0.42} height={kingpinHeight} color="#7aa2f7" label={`KP ${analysis.kingpinLoadKg.toFixed(0)} kg`} />
-      <Bar x={mmToMeters(analysis.axleGroupCenterXmm)} z={width + 0.42} height={axleHeight} color="#f0b75b" label={`Axles ${analysis.axleGroupLoadKg.toFixed(0)} kg`} />
+      {analysis.axleLoads.map((axle) => (
+        <Bar
+          key={axle.axleId}
+          x={mmToMeters(axle.xMm)}
+          z={width + 0.42}
+          height={Math.max(0.12, axle.usage * 1.6)}
+          color={axle.usage > 1 ? "#c94f4f" : axle.usage > 0.85 ? "#f0b75b" : "#3a9b68"}
+          label={`${axle.name} ${axle.loadKg.toFixed(0)} kg`}
+        />
+      ))}
     </group>
   );
 }

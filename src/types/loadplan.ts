@@ -18,6 +18,39 @@ export interface VehicleDisplaySettings {
   showWeightHeatmap: boolean;
 }
 
+export interface Axle {
+  id: string;
+  name: string;
+  xMm: number;
+  zMm?: number;
+  maxLoadKg: number;
+  axleType: "steer" | "drive" | "trailer" | "tag" | "lift";
+  wheelCount: number;
+  enabled: boolean;
+}
+
+export interface AxleGroup {
+  id: string;
+  name: string;
+  axleIds: string[];
+  maxLoadKg: number;
+}
+
+export interface VehicleWeightModel {
+  id: string;
+  name: string;
+  vehicleType: "semi_trailer" | "rigid" | "road_train";
+  trailerTareKg: number;
+  tractorTareKg?: number;
+  maxGrossWeightKg: number;
+  kingpinXmm: number;
+  trailerAxleGroupCenterXmm: number;
+  axles: Axle[];
+  axleGroups: AxleGroup[];
+  recommendedKingpinLoadMinKg?: number;
+  recommendedKingpinLoadMaxKg?: number;
+}
+
 export interface Vector3Mm {
   x: number;
   y: number;
@@ -82,6 +115,7 @@ export interface LoadPlan {
   snapMm: number;
   wallDepthMm: number;
   wallNotes: Record<number, string>;
+  vehicleWeightModel: VehicleWeightModel;
 }
 
 export interface LoadWall {
@@ -129,12 +163,30 @@ export interface LocalProjectSummary {
 
 export interface VehicleWeightAnalysis {
   totalLoadKg: number;
+  grossWeightKg: number;
   centerOfGravityMm: Vector3Mm;
   kingpinLoadKg: number;
   axleGroupLoadKg: number;
-  axleLoadsKg: number[];
+  axleLoads: Array<{
+    axleId: string;
+    name: string;
+    loadKg: number;
+    maxLoadKg: number;
+    usage: number;
+    xMm: number;
+    wheelCount: number;
+  }>;
+  axleGroupLoads: Array<{
+    groupId: string;
+    name: string;
+    loadKg: number;
+    maxLoadKg: number;
+    usage: number;
+  }>;
   kingpinXmm: number;
   axleGroupCenterXmm: number;
   balanceRatio: number;
+  lateralOffsetMm: number;
+  cgHeightRatio: number;
   warnings: string[];
 }

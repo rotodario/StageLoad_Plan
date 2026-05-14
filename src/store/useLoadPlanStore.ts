@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, Truck, Vector3Mm, VehicleDisplayMode, VehicleDisplaySettings, ViewPreset, WorkspaceMode } from "../types/loadplan";
+import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, Truck, Vector3Mm, VehicleDisplayMode, VehicleDisplaySettings, VehicleWeightModel, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
+import { defaultVehicleWeightModel, getVehiclePresetById } from "../data/vehiclePresets";
 import { boundsIntersect, calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, isInsideTruck, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
@@ -39,6 +40,7 @@ interface LoadPlanStore {
   setSnap: (snapMm: number) => void;
   setWallDepth: (wallDepthMm: number) => void;
   setWallNote: (wallNumber: number, note: string) => void;
+  setVehicleWeightPreset: (presetId: string) => void;
   setTruck: (truck: Partial<Truck>) => void;
   setView: (view: ViewPreset) => void;
   setWorkspaceMode: (mode: WorkspaceMode) => void;
@@ -70,6 +72,7 @@ function withDerived(plan: LoadPlan): LoadPlan {
     ...plan,
     wallDepthMm: plan.wallDepthMm || 1200,
     wallNotes: plan.wallNotes || {},
+    vehicleWeightModel: normalizeVehicleWeightModel(plan.vehicleWeightModel),
   };
   const itemsWithWalls = assignLoadWalls(normalizedPlan.items, normalizedPlan.templates, normalizedPlan.wallDepthMm);
   const itemsWithBlocking = itemsWithWalls.map((item) => {
@@ -94,6 +97,16 @@ function withDerived(plan: LoadPlan): LoadPlan {
     ...normalizedPlan,
     items: itemsWithBlocking,
     updatedAt: new Date().toISOString(),
+  };
+}
+
+function normalizeVehicleWeightModel(model?: VehicleWeightModel): VehicleWeightModel {
+  const source = model ?? defaultVehicleWeightModel;
+  return {
+    ...defaultVehicleWeightModel,
+    ...source,
+    axles: (source.axles?.length ? source.axles : defaultVehicleWeightModel.axles).map((axle) => ({ ...axle, enabled: axle.enabled ?? true })),
+    axleGroups: source.axleGroups?.length ? source.axleGroups : defaultVehicleWeightModel.axleGroups,
   };
 }
 
@@ -431,6 +444,13 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       delete nextNotes[wallNumber];
     }
     const plan = withDerived({ ...state.plan, wallNotes: nextNotes });
+    return commitPlan(state, plan);
+  }),
+
+  setVehicleWeightPreset: (presetId) => set((state) => {
+    const preset = getVehiclePresetById(presetId);
+    if (!preset) return state;
+    const plan = withDerived({ ...state.plan, vehicleWeightModel: preset });
     return commitPlan(state, plan);
   }),
 
