@@ -6,12 +6,14 @@ interface Props {
   step: number;
   total: number;
   playing: boolean;
+  speed: 1 | 2;
   onModeChange: (mode?: LoadFlowMode) => void;
   onStepChange: (step: number) => void;
   onPlayingChange: (playing: boolean) => void;
+  onSpeedChange: (speed: 1 | 2) => void;
 }
 
-export function LoadFlowControls({ mode, step, total, playing, onModeChange, onStepChange, onPlayingChange }: Props) {
+export function LoadFlowControls({ mode, step, total, playing, speed, onModeChange, onStepChange, onPlayingChange, onSpeedChange }: Props) {
   const enabled = Boolean(mode);
   const label = mode === "load" ? "Carga" : mode === "unload" ? "Descarga" : "Flujo";
   return (
@@ -34,6 +36,9 @@ export function LoadFlowControls({ mode, step, total, playing, onModeChange, onS
       </button>
       <button className="icon-btn" disabled={!enabled} onClick={() => onStepChange(0)} title="Reiniciar animacion">
         <RotateCcw size={14} />
+      </button>
+      <button className={speed === 2 ? "view-btn-active" : "view-btn"} disabled={!enabled} onClick={() => onSpeedChange(speed === 1 ? 2 : 1)} title="Velocidad de reproduccion">
+        {speed}x
       </button>
       <div className="min-w-[96px] px-2 text-xs text-cad-muted">
         <span className="text-cad-text">{label}</span> {step}/{total}

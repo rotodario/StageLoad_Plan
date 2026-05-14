@@ -13,6 +13,7 @@ export function TruckViewport3D() {
   const [flowMode, setFlowMode] = useState<LoadFlowMode | undefined>();
   const [flowStep, setFlowStep] = useState(0);
   const [flowPlaying, setFlowPlaying] = useState(false);
+  const [flowSpeed, setFlowSpeed] = useState<1 | 2>(1);
   const flowTotal = useMemo(() => {
     if (!flowMode) return 0;
     return (flowMode === "load" ? getLoadOrder(plan.items) : getUnloadOrder(plan.items)).filter((item) => !item.hidden).length;
@@ -32,9 +33,9 @@ export function TruckViewport3D() {
         }
         return step + 1;
       });
-    }, 850);
+    }, flowSpeed === 2 ? 425 : 850);
     return () => window.clearInterval(timer);
-  }, [flowMode, flowPlaying, flowTotal]);
+  }, [flowMode, flowPlaying, flowSpeed, flowTotal]);
 
   function setMode(mode?: LoadFlowMode) {
     setFlowMode(mode);
@@ -58,12 +59,14 @@ export function TruckViewport3D() {
         step={flowStep}
         total={flowTotal}
         playing={flowPlaying}
+        speed={flowSpeed}
         onModeChange={setMode}
         onStepChange={(step) => {
           setFlowStep(step);
           setFlowPlaying(false);
         }}
         onPlayingChange={setFlowPlaying}
+        onSpeedChange={setFlowSpeed}
       />
       <KeyboardShortcuts />
     </section>
