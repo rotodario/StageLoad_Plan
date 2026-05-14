@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { LoadItemInstance, LoadItemTemplate, LoadPlan, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
-import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
+import { boundsIntersect, calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, isInsideTruck, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
 
@@ -30,6 +30,7 @@ interface LoadPlanStore {
   nudgeSelected: (axis: keyof Vector3Mm, direction: -1 | 1) => void;
   rotateSelected90: () => void;
   duplicateSelected: () => void;
+  duplicateSelectedAbove: () => void;
   deleteSelected: () => void;
   setSnap: (snapMm: number) => void;
   setTruck: (truck: Partial<Truck>) => void;
@@ -312,6 +313,38 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       position: findFreeFloorPosition(template, state.plan.items, state.plan.templates, state.plan.truck, state.plan.snapMm, selected, selected.rotation),
       loadOrder: state.plan.items.length + 1,
     };
+    const plan = withDerived({ ...state.plan, items: [...state.plan.items, copy] });
+    return commitPlan(state, plan, copy.id);
+  }),
+
+  duplicateSelectedAbove: () => set((state) => {
+    const selected = state.plan.items.find((item) => item.id === state.selectedItemId);
+    if (!selected || selected.hidden) return state;
+    const template = state.plan.templates.find((entry) => entry.id === selected.templateId);
+    if (!template) return state;
+
+    const selectedBox = getItemBoundingBox(selected, template);
+    const copy: LoadItemInstance = {
+      ...selected,
+      id: crypto.randomUUID(),
+      label: `${selected.label} top`,
+      position: {
+        x: selected.position.x,
+        y: selectedBox.max.y,
+        z: selected.position.z,
+      },
+      loadOrder: state.plan.items.length + 1,
+    };
+
+    if (!isInsideTruck(copy, template, state.plan.truck)) return state;
+    const copyBox = getItemBoundingBox(copy, template);
+    const collides = state.plan.items.some((item) => {
+      if (item.hidden) return false;
+      const itemTemplate = state.plan.templates.find((entry) => entry.id === item.templateId);
+      return itemTemplate ? boundsIntersect(copyBox, getItemBoundingBox(item, itemTemplate)) : false;
+    });
+    if (collides) return state;
+
     const plan = withDerived({ ...state.plan, items: [...state.plan.items, copy] });
     return commitPlan(state, plan, copy.id);
   }),
