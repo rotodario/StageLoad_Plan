@@ -36,6 +36,20 @@ export interface AxleGroup {
   maxLoadKg: number;
 }
 
+export interface VehicleGeometryModel {
+  cabLengthMm: number;
+  cabWidthMm: number;
+  cabHeightMm: number;
+  cabFrontXmm: number;
+  cabRearXmm: number;
+  tractorFrameRearXmm: number;
+  fifthWheelXmm?: number;
+  trailerFrontXmm: number;
+  trailerRearXmm: number;
+  trailerBoxFrontXmm: number;
+  trailerBoxRearXmm: number;
+}
+
 export interface VehicleWeightModel {
   id: string;
   name: string;
@@ -47,6 +61,7 @@ export interface VehicleWeightModel {
   trailerAxleGroupCenterXmm: number;
   axles: Axle[];
   axleGroups: AxleGroup[];
+  visualGeometry: VehicleGeometryModel;
   recommendedKingpinLoadMinKg?: number;
   recommendedKingpinLoadMaxKg?: number;
 }

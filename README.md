@@ -50,6 +50,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Modos visuales `solid`, `xray` y `hybrid`, con toggles por capa.
 - Analisis visual inicial: centro de gravedad, reparto kingpin/ejes, barras de peso y heatmap.
 - Modelo de peso configurable con presets de vehiculo, ejes, grupos, limites y warnings.
+- Geometria visual del vehiculo sincronizada con el preset: cabina, chasis, trailer, kingpin y ejes.
 - Grid tecnico y camara orbitable.
 - Toggle superior para mostrar u ocultar etiquetas de bultos.
 - Biblioteca de elementos y creacion de plantillas.

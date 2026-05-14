@@ -13,6 +13,7 @@ Status: implemented.
 - Modular vehicle model with cab, shell, chassis, axles, wheels and X-Ray/Hybrid display modes.
 - Initial vehicle weight overlays: CG, kingpin, axle group and heatmap.
 - Configurable vehicle weight model with presets, axle limits and group warnings.
+- Vehicle visual geometry driven by the same preset as axle analysis.
 
 ## Phase 2: Manual Placement Tools
 

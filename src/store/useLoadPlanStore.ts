@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { LoadItemInstance, LoadItemTemplate, LoadPlan, LocalProjectSummary, PlannerReport, Truck, Vector3Mm, VehicleDisplayMode, VehicleDisplaySettings, VehicleWeightModel, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
 import { defaultVehicleWeightModel, getVehiclePresetById } from "../data/vehiclePresets";
+import { normalizeVehicleGeometry } from "../utils/vehicleGeometry";
 import { boundsIntersect, calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, isInsideTruck, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
@@ -72,7 +73,7 @@ function withDerived(plan: LoadPlan): LoadPlan {
     ...plan,
     wallDepthMm: plan.wallDepthMm || 1200,
     wallNotes: plan.wallNotes || {},
-    vehicleWeightModel: normalizeVehicleWeightModel(plan.vehicleWeightModel),
+    vehicleWeightModel: normalizeVehicleWeightModel(plan.vehicleWeightModel, plan.truck),
   };
   const itemsWithWalls = assignLoadWalls(normalizedPlan.items, normalizedPlan.templates, normalizedPlan.wallDepthMm);
   const itemsWithBlocking = itemsWithWalls.map((item) => {
@@ -100,13 +101,17 @@ function withDerived(plan: LoadPlan): LoadPlan {
   };
 }
 
-function normalizeVehicleWeightModel(model?: VehicleWeightModel): VehicleWeightModel {
+function normalizeVehicleWeightModel(model: VehicleWeightModel | undefined, truck: Truck): VehicleWeightModel {
   const source = model ?? defaultVehicleWeightModel;
-  return {
+  const normalized = {
     ...defaultVehicleWeightModel,
     ...source,
     axles: (source.axles?.length ? source.axles : defaultVehicleWeightModel.axles).map((axle) => ({ ...axle, enabled: axle.enabled ?? true })),
     axleGroups: source.axleGroups?.length ? source.axleGroups : defaultVehicleWeightModel.axleGroups,
+  };
+  return {
+    ...normalized,
+    visualGeometry: normalizeVehicleGeometry(normalized, truck),
   };
 }
 

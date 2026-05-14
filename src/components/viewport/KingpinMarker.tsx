@@ -1,17 +1,20 @@
 import { Html } from "@react-three/drei";
-import type { Truck, VehicleWeightAnalysis } from "../../types/loadplan";
+import type { Truck, VehicleWeightAnalysis, VehicleWeightModel } from "../../types/loadplan";
 import { mmToMeters } from "../../utils/units";
+import { shouldShowKingpin } from "../../utils/vehicleGeometry";
 
 interface Props {
   truck: Truck;
   analysis: VehicleWeightAnalysis;
   visible: boolean;
+  model: VehicleWeightModel;
 }
 
-export function KingpinMarker({ truck, analysis, visible }: Props) {
-  if (!visible) return null;
+export function KingpinMarker({ truck, analysis, visible, model }: Props) {
+  if (!visible || !shouldShowKingpin(model)) return null;
+  const xMm = model.visualGeometry.fifthWheelXmm ?? model.kingpinXmm;
   return (
-    <group position={[mmToMeters(analysis.kingpinXmm), -0.02, mmToMeters(truck.widthMm / 2)]}>
+    <group position={[mmToMeters(xMm), -0.02, mmToMeters(truck.widthMm / 2)]}>
       <mesh>
         <cylinderGeometry args={[0.12, 0.12, 0.04, 24]} />
         <meshStandardMaterial color="#7aa2f7" emissive="#1d3d70" emissiveIntensity={0.35} />
