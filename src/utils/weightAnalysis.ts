@@ -31,8 +31,8 @@ export function analyzeVehicleWeight(plan: LoadPlan): VehicleWeightAnalysis {
     : { x: plan.truck.lengthMm / 2, y: 0, z: plan.truck.widthMm / 2 };
 
   const enabledAxles = model.axles.filter((axle) => axle.enabled);
-  const trailerAxles = enabledAxles.filter((axle) => axle.axleType === "trailer" || axle.axleType === "tag" || axle.axleType === "lift");
-  const supportAxles = model.vehicleType === "semi_trailer" ? trailerAxles : enabledAxles;
+  const trailerAxles = enabledAxles.filter((axle) => axle.axleType === "trailer");
+  const tractorAxles = enabledAxles.filter((axle) => axle.axleType !== "trailer");
   const axleGroupCenterXmm = model.trailerAxleGroupCenterXmm;
 
   // Static beam approximation: the payload is treated as a point load at CG,
@@ -43,7 +43,12 @@ export function analyzeVehicleWeight(plan: LoadPlan): VehicleWeightAnalysis {
     : distributeRigidLoad(totalLoadKg, centerOfGravityMm.x, enabledAxles);
   const axleGroupLoadKg = clamp(rawAxleGroupLoad, 0, totalLoadKg);
   const kingpinLoadKg = model.vehicleType === "semi_trailer" ? totalLoadKg - axleGroupLoadKg : 0;
-  const axleLoads = distributeToAxles(supportAxles, axleGroupLoadKg);
+  const axleLoads = model.vehicleType === "semi_trailer"
+    ? mergeAxleLoads(
+      distributeToAxles(tractorAxles, kingpinLoadKg + (model.tractorTareKg ?? 0)),
+      distributeToAxles(trailerAxles, axleGroupLoadKg + model.trailerTareKg),
+    )
+    : distributeRigidAxleLoads(enabledAxles, grossWeightKg, centerOfGravityMm.x);
   const axleGroupLoads = model.axleGroups.map((group) => {
     const loadKg = axleLoads
       .filter((axleLoad) => group.axleIds.includes(axleLoad.axleId))
@@ -104,12 +109,48 @@ function distributeToAxles(axles: Axle[], loadKg: number): VehicleWeightAnalysis
   });
 }
 
+function distributeRigidAxleLoads(axles: Axle[], loadKg: number, cgXmm: number): VehicleWeightAnalysis["axleLoads"] {
+  const enabled = axles.filter((axle) => axle.enabled).sort((a, b) => a.xMm - b.xMm);
+  if (enabled.length === 0) return [];
+  if (enabled.length === 1) return distributeToAxles(enabled, loadKg);
+
+  const frontAxle = enabled[0];
+  const rearAxles = enabled.slice(1);
+  const rearCenterXmm = weightedAxleCenter(rearAxles);
+  const span = Math.max(1, rearCenterXmm - frontAxle.xMm);
+  // Two-support rigid truck approximation: front axle versus rear axle group.
+  // The rear reaction grows as payload CG moves toward the rear group center.
+  const rearLoadKg = clamp(loadKg * ((cgXmm - frontAxle.xMm) / span), 0, loadKg);
+  const frontLoadKg = loadKg - rearLoadKg;
+  return mergeAxleLoads(distributeToAxles([frontAxle], frontLoadKg), distributeToAxles(rearAxles, rearLoadKg));
+}
+
 function distributeRigidLoad(totalLoadKg: number, cgXmm: number, axles: Axle[]): number {
   if (axles.length <= 1) return totalLoadKg;
   const minX = Math.min(...axles.map((axle) => axle.xMm));
   const maxX = Math.max(...axles.map((axle) => axle.xMm));
   const ratio = clamp((cgXmm - minX) / Math.max(1, maxX - minX), 0, 1);
   return totalLoadKg * ratio;
+}
+
+function weightedAxleCenter(axles: Axle[]): number {
+  const totalCapacity = axles.reduce((sum, axle) => sum + axle.maxLoadKg, 0);
+  if (totalCapacity <= 0) return axles.reduce((sum, axle) => sum + axle.xMm, 0) / Math.max(axles.length, 1);
+  return axles.reduce((sum, axle) => sum + axle.xMm * axle.maxLoadKg, 0) / totalCapacity;
+}
+
+function mergeAxleLoads(...groups: VehicleWeightAnalysis["axleLoads"][]): VehicleWeightAnalysis["axleLoads"] {
+  const merged = new Map<string, VehicleWeightAnalysis["axleLoads"][number]>();
+  groups.flat().forEach((load) => {
+    const current = merged.get(load.axleId);
+    const loadKg = (current?.loadKg ?? 0) + load.loadKg;
+    merged.set(load.axleId, {
+      ...load,
+      loadKg,
+      usage: load.maxLoadKg > 0 ? loadKg / load.maxLoadKg : 0,
+    });
+  });
+  return Array.from(merged.values()).sort((a, b) => a.xMm - b.xMm);
 }
 
 function buildWarnings(

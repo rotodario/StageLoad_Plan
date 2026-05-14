@@ -14,6 +14,7 @@ Status: implemented.
 - Initial vehicle weight overlays: CG, kingpin, axle group and heatmap.
 - Configurable vehicle weight model with presets, axle limits and group warnings.
 - Vehicle visual geometry driven by the same preset as axle analysis.
+- Axle analysis panel with per-axle usage bars and tare-aware load distribution.
 
 ## Phase 2: Manual Placement Tools
 
