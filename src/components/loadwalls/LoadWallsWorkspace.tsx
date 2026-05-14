@@ -33,7 +33,7 @@ export function LoadWallsWorkspace() {
           Paredes de carga
         </h1>
         <div className="text-xs text-cad-muted">
-          Tramos de {formatMeters(plan.wallDepthMm)} desde puerta hacia fondo
+          Filas reales detectadas desde puerta hacia fondo
         </div>
         <button className="toolbar-btn ml-auto" title="Imprimir pared activa" onClick={printActiveWall}>
           <Printer size={15} />PDF
@@ -41,6 +41,7 @@ export function LoadWallsWorkspace() {
       </header>
       <div className="grid min-h-0 grid-cols-[220px_1fr]">
         <nav className="thin-scrollbar min-h-0 overflow-y-auto border-r border-cad-border bg-cad-panel p-2">
+          {walls.length === 0 && <p className="p-2 text-sm text-cad-muted">No hay paredes generadas.</p>}
           {walls.map((wall) => (
             <button
               key={wall.wallNumber}
@@ -53,49 +54,55 @@ export function LoadWallsWorkspace() {
           ))}
         </nav>
         <main className="thin-scrollbar min-h-0 overflow-y-auto p-4">
-          <LoadWallDetail
-            wall={activeWall}
-            truckWidthMm={plan.truck.widthMm}
-            truckHeightMm={plan.truck.heightMm}
-            selectedItemId={selectedItemId}
-            onSelectItem={selectItem}
-            note={plan.wallNotes[activeWall.wallNumber] ?? ""}
-            onNoteChange={(note) => setWallNote(activeWall.wallNumber, note)}
-          />
-          <div className="mt-4 rounded border border-cad-border bg-cad-panel">
-            <div className="grid grid-cols-[48px_1fr_90px_90px_90px_90px] border-b border-cad-border px-3 py-2 text-[11px] uppercase tracking-wide text-cad-muted">
-              <span>#</span>
-              <span>Bulto</span>
-              <span>Depto</span>
-              <span>Peso</span>
-              <span>Carga</span>
-              <span>Descarga</span>
+          {activeWall ? (
+            <LoadWallDetail
+              wall={activeWall}
+              truckWidthMm={plan.truck.widthMm}
+              truckHeightMm={plan.truck.heightMm}
+              selectedItemId={selectedItemId}
+              onSelectItem={selectItem}
+              note={plan.wallNotes[activeWall.wallNumber] ?? ""}
+              onNoteChange={(note) => setWallNote(activeWall.wallNumber, note)}
+            />
+          ) : (
+            <div className="rounded border border-cad-border bg-cad-panel p-4 text-sm text-cad-muted">Coloca bultos en el camion para generar paredes por filas.</div>
+          )}
+          {activeWall && (
+            <div className="mt-4 rounded border border-cad-border bg-cad-panel">
+              <div className="grid grid-cols-[48px_1fr_90px_90px_90px_90px] border-b border-cad-border px-3 py-2 text-[11px] uppercase tracking-wide text-cad-muted">
+                <span>#</span>
+                <span>Bulto</span>
+                <span>Depto</span>
+                <span>Peso</span>
+                <span>Carga</span>
+                <span>Descarga</span>
+              </div>
+              {activeWall.items.length === 0 ? (
+                <div className="px-3 py-4 text-sm text-cad-muted">No hay bultos en esta pared.</div>
+              ) : (
+                activeWall.items
+                  .slice()
+                  .sort((a, b) => a.position.z - b.position.z || a.position.y - b.position.y)
+                  .map((item, index) => {
+                    const template = plan.templates.find((entry) => entry.id === item.templateId);
+                    return (
+                      <button
+                        key={item.id}
+                        className={selectedItemId === item.id ? "wall-table-row-active" : "wall-table-row"}
+                        onClick={() => selectItem(item.id)}
+                      >
+                        <span>{index + 1}</span>
+                        <span className="truncate">{item.label}</span>
+                        <span>{item.department ?? template?.department}</span>
+                        <span>{template?.weightKg ?? 0} kg</span>
+                        <span>{item.loadOrder}</span>
+                        <span>{item.unloadPriority}</span>
+                      </button>
+                    );
+                  })
+              )}
             </div>
-            {activeWall.items.length === 0 ? (
-              <div className="px-3 py-4 text-sm text-cad-muted">No hay bultos en esta pared.</div>
-            ) : (
-              activeWall.items
-                .slice()
-                .sort((a, b) => a.position.z - b.position.z || a.position.y - b.position.y)
-                .map((item, index) => {
-                  const template = plan.templates.find((entry) => entry.id === item.templateId);
-                  return (
-                    <button
-                      key={item.id}
-                      className={selectedItemId === item.id ? "wall-table-row-active" : "wall-table-row"}
-                      onClick={() => selectItem(item.id)}
-                    >
-                      <span>{index + 1}</span>
-                      <span className="truncate">{item.label}</span>
-                      <span>{item.department ?? template?.department}</span>
-                      <span>{template?.weightKg ?? 0} kg</span>
-                      <span>{item.loadOrder}</span>
-                      <span>{item.unloadPriority}</span>
-                    </button>
-                  );
-                })
-            )}
-          </div>
+          )}
         </main>
       </div>
     </section>

@@ -23,13 +23,11 @@ export function TruckPropertiesPanel() {
         <option value={100}>100 mm</option>
         <option value={250}>250 mm</option>
       </select>
-      <label className="field-label mt-3">Profundidad pared</label>
+      <label className="field-label mt-3">Agrupar filas de pared</label>
       <select className="field-input" value={plan.wallDepthMm} onChange={(event) => setWallDepth(Number(event.target.value))}>
-        <option value={1000}>1.00 m</option>
-        <option value={1200}>1.20 m</option>
-        <option value={1500}>1.50 m</option>
-        <option value={2000}>2.00 m</option>
-        <option value={2400}>2.40 m</option>
+        <option value={600}>Estricto</option>
+        <option value={1000}>Normal</option>
+        <option value={1200}>Flexible</option>
       </select>
     </section>
   );

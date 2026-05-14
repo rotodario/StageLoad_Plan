@@ -50,10 +50,9 @@ Status: partially implemented.
 - Outside-truck warnings.
 - Floating-item warnings.
 - Weight limit warning.
-- Basic unload-blocking warning.
 - Stackability and max-stack validation.
-- Generated load walls by 1200 mm slices.
-- Configurable load wall depth.
+- Generated load walls from real object rows.
+- Configurable row grouping tolerance for load walls.
 - Load, unload, department and wall lists.
 - Dedicated load walls workspace with front-view wall review.
 - Manual notes per load wall.

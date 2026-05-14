@@ -65,9 +65,9 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Validaciones de apilado: soporte no apilable y limite `maxStack`.
 - Undo/redo para cambios de plan, con botones y atajos `Ctrl+Z` / `Ctrl+Y`.
 - Colisiones por bounding boxes.
-- Validaciones de volumen, peso, fuera de camion, flotacion y bloqueo basico de descarga.
-- Paredes de carga generadas por tramos de 1.20 m.
-- Profundidad configurable para paredes de carga: 1.00, 1.20, 1.50, 2.00 o 2.40 m.
+- Validaciones de volumen, peso, fuera de camion y flotacion.
+- Paredes de carga generadas desde filas reales de bultos, no por cortes fijos del camion.
+- Agrupacion configurable de frentes cercanos para detectar filas de pared.
 - Workspace dedicado para revisar paredes de carga en vista frontal.
 - Notas manuales persistentes por pared de carga.
 - Reportes por carga, descarga, departamento y pared.

@@ -2,11 +2,13 @@ import type { LoadItemInstance, LoadItemTemplate, LoadWall } from "../types/load
 import { getItemBoundingBox } from "./geometry";
 
 export const DEFAULT_WALL_DEPTH_MM = 1200;
+const ROW_CLUSTER_TOLERANCE_MM = 150;
 
 export function assignLoadWalls(items: LoadItemInstance[], templates: LoadItemTemplate[], wallDepthMm = DEFAULT_WALL_DEPTH_MM): LoadItemInstance[] {
+  const walls = generateLoadWalls(items, templates, Number.POSITIVE_INFINITY, wallDepthMm);
   return items.map((item) => ({
     ...item,
-    wallNumber: Math.floor(item.position.x / wallDepthMm) + 1,
+    wallNumber: findPrimaryWallNumber(item, templates, walls),
   }));
 }
 
@@ -29,17 +31,27 @@ export function getItemsByWall(items: LoadItemInstance[], wallNumber: number): L
 }
 
 export function generateLoadWalls(items: LoadItemInstance[], templates: LoadItemTemplate[], truckLengthMm: number, wallDepthMm = DEFAULT_WALL_DEPTH_MM): LoadWall[] {
-  const wallCount = Math.ceil(truckLengthMm / wallDepthMm);
-  return Array.from({ length: wallCount }, (_, index) => {
-    const wallNumber = index + 1;
-    const startMm = index * wallDepthMm;
-    const endMm = Math.min(startMm + wallDepthMm, truckLengthMm);
-    const wallItems = items.filter((item) => {
+  const visibleBoxes = items
+    .filter((item) => !item.hidden)
+    .map((item) => {
       const template = templates.find((entry) => entry.id === item.templateId);
-      if (!template) return false;
-      const box = getItemBoundingBox(item, template);
-      return box.min.x < endMm && box.max.x > startMm;
-    });
+      return template ? { item, template, box: getItemBoundingBox(item, template) } : undefined;
+    })
+    .filter((entry): entry is { item: LoadItemInstance; template: LoadItemTemplate; box: ReturnType<typeof getItemBoundingBox> } => Boolean(entry))
+    .sort((a, b) => a.box.min.x - b.box.min.x);
+
+  if (visibleBoxes.length === 0) return [];
+
+  const rowStarts = clusterRowStarts(visibleBoxes.map((entry) => entry.box.min.x), Math.max(ROW_CLUSTER_TOLERANCE_MM, Math.min(wallDepthMm * 0.25, 300)));
+  const lastItemEnd = Math.max(...visibleBoxes.map((entry) => entry.box.max.x));
+
+  return rowStarts.map((startMm, index) => {
+    const wallNumber = index + 1;
+    const nextRowStart = rowStarts[index + 1];
+    const endMm = Math.min(nextRowStart ?? lastItemEnd, truckLengthMm);
+    const wallItems = visibleBoxes
+      .filter((entry) => entry.box.min.x < endMm && entry.box.max.x > startMm)
+      .map((entry) => entry.item);
     return {
       wallNumber,
       startMm,
@@ -48,6 +60,30 @@ export function generateLoadWalls(items: LoadItemInstance[], templates: LoadItem
       totalWeightKg: wallItems.reduce((sum, item) => sum + (templates.find((entry) => entry.id === item.templateId)?.weightKg ?? 0), 0),
     };
   });
+}
+
+function clusterRowStarts(starts: number[], toleranceMm: number): number[] {
+  const clusters: number[][] = [];
+  starts.forEach((start) => {
+    const current = clusters[clusters.length - 1];
+    if (!current || Math.abs(start - current[0]) > toleranceMm) {
+      clusters.push([start]);
+      return;
+    }
+    current.push(start);
+  });
+  return clusters.map((cluster) => Math.min(...cluster));
+}
+
+function findPrimaryWallNumber(item: LoadItemInstance, templates: LoadItemTemplate[], walls: LoadWall[]): number | undefined {
+  const template = templates.find((entry) => entry.id === item.templateId);
+  if (!template) return undefined;
+  const box = getItemBoundingBox(item, template);
+  return walls.find((wall, index) => {
+    const nextWall = walls[index + 1];
+    const endMm = nextWall?.startMm ?? wall.endMm;
+    return box.min.x >= wall.startMm && box.min.x < endMm;
+  })?.wallNumber ?? walls[walls.length - 1]?.wallNumber;
 }
 
 export function getLoadOrder(items: LoadItemInstance[]): LoadItemInstance[] {
