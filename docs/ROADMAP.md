@@ -18,6 +18,7 @@ Status: partially implemented.
 - Move with transform gizmo.
 - Move with keyboard nudges.
 - Undo/redo for plan edits.
+- Free-position placement when adding or duplicating items.
 - Snap to configurable grid.
 - Snap to truck limits.
 - Basic snap to nearby item faces.

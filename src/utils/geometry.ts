@@ -29,6 +29,12 @@ export function getItemBoundingBox(instance: LoadItemInstance, template: LoadIte
   };
 }
 
+export function boundsIntersect(a: BoundsMm, b: BoundsMm): boolean {
+  return a.min.x < b.max.x && a.max.x > b.min.x
+    && a.min.y < b.max.y && a.max.y > b.min.y
+    && a.min.z < b.max.z && a.max.z > b.min.z;
+}
+
 export function snapVector(position: Vector3Mm, snapMm: number): Vector3Mm {
   const snap = Math.max(snapMm, 1);
   return {
@@ -87,6 +93,72 @@ export function isInsideTruck(instance: LoadItemInstance, template: LoadItemTemp
     && box.max.x <= truck.lengthMm
     && box.max.y <= truck.heightMm
     && box.max.z <= truck.widthMm;
+}
+
+export function findFreeFloorPosition(
+  template: LoadItemTemplate,
+  items: LoadItemInstance[],
+  templates: LoadItemTemplate[],
+  truck: Truck,
+  snapMm: number,
+  preferredItem?: LoadItemInstance,
+  rotation: Vector3Mm = { x: 0, y: 0, z: 0 },
+): Vector3Mm {
+  const probe: LoadItemInstance = {
+    id: "__probe__",
+    templateId: template.id,
+    label: template.name,
+    position: { x: 0, y: 0, z: 0 },
+    rotation,
+    locked: false,
+    hidden: false,
+    loadOrder: 0,
+    unloadPriority: 0,
+    blockedBy: [],
+  };
+  const size = getRotatedSize(template, probe.rotation);
+  const step = Math.max(snapMm, 50);
+  const wallStep = 1200;
+
+  function fits(position: Vector3Mm): boolean {
+    const candidate = { ...probe, position };
+    if (!isInsideTruck(candidate, template, truck)) return false;
+    const candidateBox = getItemBoundingBox(candidate, template);
+    return !items.some((item) => {
+      if (item.hidden) return false;
+      const itemTemplate = templates.find((entry) => entry.id === item.templateId);
+      return itemTemplate ? boundsIntersect(candidateBox, getItemBoundingBox(item, itemTemplate)) : false;
+    });
+  }
+
+  if (preferredItem) {
+    const preferredTemplate = templates.find((entry) => entry.id === preferredItem.templateId);
+    if (preferredTemplate) {
+      const preferredBox = getItemBoundingBox(preferredItem, preferredTemplate);
+      const sameWallCandidates = [
+        { x: preferredBox.min.x, y: 0, z: preferredBox.max.z },
+        { x: preferredBox.min.x, y: 0, z: preferredBox.min.z - size.z },
+      ].map((position) => clampInsideTruck(snapVector(position, step), size, truck));
+      const nextToPreferred = sameWallCandidates.find(fits);
+      if (nextToPreferred) return nextToPreferred;
+    }
+  }
+
+  for (let x = 0; x <= truck.lengthMm - size.x; x += wallStep) {
+    for (let z = 0; z <= truck.widthMm - size.z; z += step) {
+      const candidate = snapVector({ x, y: 0, z }, step);
+      if (fits(candidate)) return candidate;
+    }
+  }
+
+  for (let x = 0; x <= truck.lengthMm - size.x; x += step) {
+    for (let z = 0; z <= truck.widthMm - size.z; z += step) {
+      const candidate = snapVector({ x, y: 0, z }, step);
+      if (fits(candidate)) return candidate;
+    }
+  }
+
+  return { x: 0, y: 0, z: 0 };
 }
 
 export function calculateTotalWeight(items: LoadItemInstance[], templates: LoadItemTemplate[]): number {

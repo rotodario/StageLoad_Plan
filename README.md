@@ -48,7 +48,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Camion 3D transparente con dimensiones reales.
 - Grid tecnico y camara orbitable.
 - Biblioteca de elementos y creacion de plantillas.
-- Colocacion manual de bultos.
+- Colocacion manual de bultos con busqueda de hueco libre al añadir o duplicar.
 - Snap a grid, paredes y caras cercanas de otros bultos.
 - Seleccion, movimiento, rotacion 90 grados, duplicado, borrado, bloqueo y ocultacion.
 - Undo/redo para cambios de plan, con botones y atajos `Ctrl+Z` / `Ctrl+Y`.

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { LoadItemInstance, LoadItemTemplate, LoadPlan, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
-import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampInsideTruck, getItemBoundingBox, getRotatedSize, snapToNearbyFaces, snapVector } from "../utils/geometry";
+import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getRotatedSize, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
 
@@ -154,11 +154,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     const template = state.plan.templates.find((entry) => entry.id === templateId);
     if (!template) return state;
     const countForTemplate = state.plan.items.filter((item) => item.templateId === templateId).length + 1;
-    const nextPosition = snapVector({
-      x: Math.min((countForTemplate - 1) * state.plan.snapMm, state.plan.truck.lengthMm - template.lengthMm),
-      y: 0,
-      z: 0,
-    }, state.plan.snapMm);
+    const nextPosition = findFreeFloorPosition(template, state.plan.items, state.plan.templates, state.plan.truck, state.plan.snapMm);
     const nextItem: LoadItemInstance = {
       id: crypto.randomUUID(),
       templateId,
@@ -239,11 +235,13 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   duplicateSelected: () => set((state) => {
     const selected = state.plan.items.find((item) => item.id === state.selectedItemId);
     if (!selected) return state;
+    const template = state.plan.templates.find((entry) => entry.id === selected.templateId);
+    if (!template) return state;
     const copy = {
       ...selected,
       id: crypto.randomUUID(),
       label: `${selected.label} copy`,
-      position: snapVector({ ...selected.position, x: selected.position.x + state.plan.snapMm * 2 }, state.plan.snapMm),
+      position: findFreeFloorPosition(template, state.plan.items, state.plan.templates, state.plan.truck, state.plan.snapMm, selected, selected.rotation),
       loadOrder: state.plan.items.length + 1,
     };
     const plan = withDerived({ ...state.plan, items: [...state.plan.items, copy] });

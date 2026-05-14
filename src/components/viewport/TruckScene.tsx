@@ -1,6 +1,6 @@
 import { OrbitControls, PerspectiveCamera, TransformControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import { mmToMeters } from "../../utils/units";
@@ -13,8 +13,7 @@ import { metersToMm } from "../../utils/units";
 
 export function TruckScene() {
   const controlsRef = useRef<any>(null);
-  const transformRef = useRef<any>(null);
-  const selectedObject = useRef<THREE.Group>(null);
+  const [selectedObject, setSelectedObject] = useState<THREE.Group | null>(null);
   const { camera } = useThree();
   const plan = useLoadPlanStore((state) => state.plan);
   const activeView = useLoadPlanStore((state) => state.activeView);
@@ -46,17 +45,20 @@ export function TruckScene() {
   }, [activeView, camera, plan.truck, truckCenter]);
 
   useEffect(() => {
-    if (!transformRef.current || !selectedObject.current) return;
-    transformRef.current.attach(selectedObject.current);
+    setSelectedObject(null);
   }, [selectedItemId]);
 
+  const captureSelectedObject = useCallback((node: THREE.Group | null) => {
+    if (node) setSelectedObject(node);
+  }, []);
+
   function commitTransform() {
-    if (!selectedItem || !selectedTemplate || !selectedObject.current) return;
+    if (!selectedItem || !selectedTemplate || !selectedObject) return;
     const box = getItemBoundingBox(selectedItem, selectedTemplate);
     moveItem(selectedItem.id, {
-      x: metersToMm(selectedObject.current.position.x) - box.size.x / 2,
-      y: metersToMm(selectedObject.current.position.y) - box.size.y / 2,
-      z: metersToMm(selectedObject.current.position.z) - box.size.z / 2,
+      x: metersToMm(selectedObject.position.x) - box.size.x / 2,
+      y: metersToMm(selectedObject.position.y) - box.size.y / 2,
+      z: metersToMm(selectedObject.position.z) - box.size.z / 2,
     });
   }
 
@@ -73,7 +75,7 @@ export function TruckScene() {
         return (
           <LoadItemMesh
             key={item.id}
-            ref={item.id === selectedItemId ? selectedObject : undefined}
+            ref={item.id === selectedItemId ? captureSelectedObject : undefined}
             item={item}
             template={plan.templates.find((template) => template.id === item.templateId)}
             selected={item.id === selectedItemId}
@@ -82,9 +84,9 @@ export function TruckScene() {
           />
         );
       })}
-      {selectedItem && selectedTemplate && !selectedItem.locked && (
-      <TransformControls
-          ref={transformRef}
+      {selectedItem && selectedTemplate && selectedObject && !selectedItem.locked && (
+        <TransformControls
+          object={selectedObject}
           mode="translate"
           space="world"
           size={0.75}
@@ -95,8 +97,9 @@ export function TruckScene() {
             commitTransform();
             if (controlsRef.current) controlsRef.current.enabled = true;
           }}
-          onObjectChange={() => (controlsRef.current.enabled = false)}
-          onMouseDown={() => (controlsRef.current.enabled = false)}
+          onMouseDown={() => {
+            if (controlsRef.current) controlsRef.current.enabled = false;
+          }}
         />
       )}
       <ViewCube />

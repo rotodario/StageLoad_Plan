@@ -1,13 +1,11 @@
 import type { CollisionWarning, LoadItemInstance, LoadItemTemplate, LoadPlan, ValidationWarning } from "../types/loadplan";
-import { calculateTotalWeight, getItemBoundingBox, isInsideTruck } from "./geometry";
+import { boundsIntersect, calculateTotalWeight, getItemBoundingBox, isInsideTruck } from "./geometry";
 
 export function checkCollision(a: LoadItemInstance, aTemplate: LoadItemTemplate, b: LoadItemInstance, bTemplate: LoadItemTemplate): boolean {
   if (a.hidden || b.hidden) return false;
   const boxA = getItemBoundingBox(a, aTemplate);
   const boxB = getItemBoundingBox(b, bTemplate);
-  return boxA.min.x < boxB.max.x && boxA.max.x > boxB.min.x
-    && boxA.min.y < boxB.max.y && boxA.max.y > boxB.min.y
-    && boxA.min.z < boxB.max.z && boxA.max.z > boxB.min.z;
+  return boundsIntersect(boxA, boxB);
 }
 
 export function checkAllCollisions(items: LoadItemInstance[], templates: LoadItemTemplate[]): CollisionWarning[] {
