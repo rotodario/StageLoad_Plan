@@ -58,7 +58,7 @@ export function validateLoadPlan(plan: LoadPlan): ValidationWarning[] {
     }
 
     if (box.min.y > 0) {
-      const supported = plan.items.some((other) => {
+      const supports = plan.items.filter((other) => {
         if (other.id === item.id || other.hidden) return false;
         const otherTemplate = plan.templates.find((entry) => entry.id === other.templateId);
         if (!otherTemplate) return false;
@@ -68,6 +68,7 @@ export function validateLoadPlan(plan: LoadPlan): ValidationWarning[] {
         const zOverlap = box.min.z < otherBox.max.z && box.max.z > otherBox.min.z;
         return verticalContact && xOverlap && zOverlap;
       });
+      const supported = supports.length > 0;
       if (!supported) {
         warnings.push({
           id: `floating-${item.id}`,
@@ -76,6 +77,17 @@ export function validateLoadPlan(plan: LoadPlan): ValidationWarning[] {
           severity: "warning",
         });
       }
+      supports.forEach((support) => {
+        const supportTemplate = plan.templates.find((entry) => entry.id === support.templateId);
+        if (supportTemplate && !supportTemplate.stackable) {
+          warnings.push({
+            id: `non-stackable-support-${item.id}-${support.id}`,
+            itemId: item.id,
+            message: `${item.label} esta apilado sobre ${support.label}, que no es apilable`,
+            severity: "error",
+          });
+        }
+      });
     }
 
     if (item.blockedBy.length > 0) {
@@ -88,5 +100,49 @@ export function validateLoadPlan(plan: LoadPlan): ValidationWarning[] {
     }
   });
 
+  getStackColumns(plan).forEach((column) => {
+    const baseTemplate = plan.templates.find((entry) => entry.id === column.base.templateId);
+    if (!baseTemplate) return;
+    if (column.items.length > baseTemplate.maxStack) {
+      warnings.push({
+        id: `max-stack-${column.base.id}`,
+        itemId: column.base.id,
+        message: `La columna de ${column.base.label} tiene ${column.items.length} alturas y supera el maximo (${baseTemplate.maxStack})`,
+        severity: "error",
+      });
+    }
+  });
+
   return warnings;
+}
+
+function getStackColumns(plan: LoadPlan): Array<{ base: LoadItemInstance; items: LoadItemInstance[] }> {
+  const visibleItems = plan.items.filter((item) => !item.hidden);
+  const columns: Array<{ base: LoadItemInstance; items: LoadItemInstance[] }> = [];
+  const assigned = new Set<string>();
+
+  visibleItems
+    .slice()
+    .sort((a, b) => a.position.y - b.position.y)
+    .forEach((item) => {
+      if (assigned.has(item.id)) return;
+      const template = plan.templates.find((entry) => entry.id === item.templateId);
+      if (!template) return;
+      const box = getItemBoundingBox(item, template);
+      const columnItems = visibleItems.filter((candidate) => {
+        const candidateTemplate = plan.templates.find((entry) => entry.id === candidate.templateId);
+        if (!candidateTemplate) return false;
+        const candidateBox = getItemBoundingBox(candidate, candidateTemplate);
+        const sameFootprint = Math.abs(candidateBox.min.x - box.min.x) <= plan.snapMm
+          && Math.abs(candidateBox.max.x - box.max.x) <= plan.snapMm
+          && Math.abs(candidateBox.min.z - box.min.z) <= plan.snapMm
+          && Math.abs(candidateBox.max.z - box.max.z) <= plan.snapMm;
+        return sameFootprint;
+      }).sort((a, b) => a.position.y - b.position.y);
+
+      columnItems.forEach((columnItem) => assigned.add(columnItem.id));
+      columns.push({ base: columnItems[0], items: columnItems });
+    });
+
+  return columns;
 }

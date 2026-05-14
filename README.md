@@ -57,6 +57,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Previsualizacion en vivo al arrastrar objetos o grupos.
 - Bloqueo de movimiento si el resultado se solapa con otro bulto.
 - `Ctrl+F` para duplicar el bulto seleccionado encima si cabe en altura y no colisiona.
+- Validaciones de apilado: soporte no apilable y limite `maxStack`.
 - Undo/redo para cambios de plan, con botones y atajos `Ctrl+Z` / `Ctrl+Y`.
 - Colisiones por bounding boxes.
 - Validaciones de volumen, peso, fuera de camion, flotacion y bloqueo basico de descarga.

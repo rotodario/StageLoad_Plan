@@ -44,6 +44,7 @@ Status: partially implemented.
 - Floating-item warnings.
 - Weight limit warning.
 - Basic unload-blocking warning.
+- Stackability and max-stack validation.
 - Generated load walls by 1200 mm slices.
 - Configurable load wall depth.
 - Load, unload, department and wall lists.
@@ -52,7 +53,7 @@ Status: partially implemented.
 
 Next:
 
-- Better fragile/stackable validation.
+- Better fragile validation.
 - Advanced blocked-by analysis using path to door.
 
 ## Phase 4: Persistence and Export
