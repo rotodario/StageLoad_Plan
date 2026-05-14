@@ -2,6 +2,8 @@ export type Department = "lighting" | "audio" | "video" | "rigging" | "cable" | 
 
 export type ViewPreset = "iso" | "top" | "left" | "right" | "front" | "rear";
 
+export type WorkspaceMode = "viewport" | "loadwalls";
+
 export interface Vector3Mm {
   x: number;
   y: number;

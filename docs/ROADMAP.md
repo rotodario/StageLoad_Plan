@@ -42,10 +42,10 @@ Status: partially implemented.
 - Basic unload-blocking warning.
 - Generated load walls by 1200 mm slices.
 - Load, unload, department and wall lists.
+- Dedicated load walls workspace with front-view wall review.
 
 Next:
 
-- Full-screen load wall workspace.
 - Custom wall depth.
 - Manual wall notes.
 - Better fragile/stackable validation.

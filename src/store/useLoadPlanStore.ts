@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { LoadItemInstance, LoadItemTemplate, LoadPlan, PlannerReport, Truck, Vector3Mm, ViewPreset } from "../types/loadplan";
+import type { LoadItemInstance, LoadItemTemplate, LoadPlan, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
 import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampInsideTruck, getItemBoundingBox, getRotatedSize, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
@@ -11,6 +11,7 @@ interface LoadPlanStore {
   plan: LoadPlan;
   selectedItemId?: string;
   activeView: ViewPreset;
+  workspaceMode: WorkspaceMode;
   report: PlannerReport;
   addTemplate: (template: Omit<LoadItemTemplate, "id">) => void;
   addItemFromTemplate: (templateId: string) => void;
@@ -24,6 +25,7 @@ interface LoadPlanStore {
   setSnap: (snapMm: number) => void;
   setTruck: (truck: Partial<Truck>) => void;
   setView: (view: ViewPreset) => void;
+  setWorkspaceMode: (mode: WorkspaceMode) => void;
   saveLocal: () => void;
   loadPlan: (plan: LoadPlan) => void;
   resetPlan: () => void;
@@ -84,6 +86,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   plan: loadedPlan,
   selectedItemId: undefined,
   activeView: "iso",
+  workspaceMode: "viewport",
   report: makeReport(loadedPlan),
 
   addTemplate: (template) => set((state) => {
@@ -211,6 +214,8 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   }),
 
   setView: (view) => set({ activeView: view }),
+
+  setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
 
   saveLocal: () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(get().plan));

@@ -1,4 +1,4 @@
-import { Download, FileJson, FolderOpen, RotateCcw, Save, View } from "lucide-react";
+import { Boxes, Columns3, Download, FileJson, FolderOpen, RotateCcw, Save, View } from "lucide-react";
 import { useRef } from "react";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import { exportPlanJson, parsePlanJson } from "../../utils/exportJson";
@@ -17,7 +17,9 @@ export function TopBar() {
   const inputRef = useRef<HTMLInputElement>(null);
   const plan = useLoadPlanStore((state) => state.plan);
   const activeView = useLoadPlanStore((state) => state.activeView);
+  const workspaceMode = useLoadPlanStore((state) => state.workspaceMode);
   const setView = useLoadPlanStore((state) => state.setView);
+  const setWorkspaceMode = useLoadPlanStore((state) => state.setWorkspaceMode);
   const saveLocal = useLoadPlanStore((state) => state.saveLocal);
   const loadPlan = useLoadPlanStore((state) => state.loadPlan);
   const resetPlan = useLoadPlanStore((state) => state.resetPlan);
@@ -48,6 +50,14 @@ export function TopBar() {
       <button className="toolbar-btn" onClick={exportJson} title="Exportar JSON"><Download size={16} />Exportar</button>
       <button className="toolbar-btn" onClick={resetPlan} title="Nuevo plan"><RotateCcw size={16} />Reset</button>
       <input ref={inputRef} type="file" accept="application/json" className="hidden" onChange={(event) => importJson(event.target.files?.[0])} />
+      <div className="ml-2 flex items-center gap-1 border-l border-cad-border pl-2">
+        <button className={workspaceMode === "viewport" ? "view-btn-active" : "view-btn"} onClick={() => setWorkspaceMode("viewport")}>
+          <Boxes size={14} />3D
+        </button>
+        <button className={workspaceMode === "loadwalls" ? "view-btn-active" : "view-btn"} onClick={() => setWorkspaceMode("loadwalls")}>
+          <Columns3 size={14} />Paredes
+        </button>
+      </div>
       <div className="ml-auto flex items-center gap-1">
         <View size={15} className="text-cad-muted" />
         {views.map((view) => (
