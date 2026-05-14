@@ -12,7 +12,7 @@ interface Props {
   hasCollision: boolean;
   previewDeltaMm?: { x: number; y: number; z: number };
   selectionDisabled?: boolean;
-  onSelect: (additive: boolean) => void;
+  onSelect: (additive: boolean, point: THREE.Vector3) => void;
 }
 
 export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh({ item, template, selected, hasCollision, previewDeltaMm, selectionDisabled, onSelect }, ref) {
@@ -32,7 +32,7 @@ export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh
       onPointerDown={(event) => {
         event.stopPropagation();
         if (selectionDisabled) return;
-        onSelect(event.shiftKey);
+        onSelect(event.shiftKey, event.point);
       }}
       onPointerOver={(event) => {
         event.stopPropagation();

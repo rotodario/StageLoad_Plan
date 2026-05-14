@@ -113,8 +113,17 @@ export function TruckScene() {
             hasCollision={hasCollision}
             previewDeltaMm={previewDeltaMm}
             selectionDisabled={isTransformPointerActiveRef.current}
-            onSelect={(additive) => {
+            onSelect={(additive, point) => {
               if (isTransformPointerActiveRef.current) return;
+              const clickNearGroupGizmo = selectedGroupCenter
+                ? point.distanceTo(new THREE.Vector3(
+                  mmToMeters(selectedGroupCenter.x),
+                  mmToMeters(selectedGroupCenter.y),
+                  mmToMeters(selectedGroupCenter.z),
+                )) < 0.55
+                : false;
+              if (activeSelectedIds.length > 1 && clickNearGroupGizmo) return;
+              if (activeSelectedIds.length > 1 && activeSelectedIds.includes(item.id) && !additive) return;
               selectItem(item.id, additive);
             }}
           />
