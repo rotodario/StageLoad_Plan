@@ -73,8 +73,14 @@ export function KeyboardShortcuts() {
   }, [deleteSelected, duplicateSelected, duplicateSelectedAbove, nudgeSelected, redo, rotateSelected90, undo]);
 
   return (
-    <div className="pointer-events-none absolute bottom-3 left-3 rounded border border-cad-border bg-cad-panel/85 px-2 py-1 text-[11px] text-cad-muted">
-      Flechas: mover - U/J: subir/bajar - R: rotar - Ctrl+D: duplicar - Ctrl+F: duplicar encima - Ctrl+Z/Y: undo/redo - Del: borrar
+    <div className="pointer-events-none absolute bottom-3 left-3 w-56 rounded border border-cad-border bg-cad-panel/90 px-2 py-1.5 text-[11px] leading-4 text-cad-muted shadow-2xl">
+      <div><span className="text-cad-text">Flechas</span>: mover X/Z</div>
+      <div><span className="text-cad-text">U / J</span>: subir / bajar</div>
+      <div><span className="text-cad-text">R</span>: rotar 90 grados</div>
+      <div><span className="text-cad-text">Ctrl+D</span>: duplicar al lado</div>
+      <div><span className="text-cad-text">Ctrl+F</span>: duplicar encima</div>
+      <div><span className="text-cad-text">Ctrl+Z / Y</span>: undo / redo</div>
+      <div><span className="text-cad-text">Del</span>: borrar</div>
     </div>
   );
 }
