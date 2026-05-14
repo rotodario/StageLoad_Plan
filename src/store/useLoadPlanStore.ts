@@ -6,13 +6,20 @@ import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
 
 const STORAGE_KEY = "stageload-planner-3d-plan";
+const HISTORY_LIMIT = 50;
 
 interface LoadPlanStore {
   plan: LoadPlan;
+  pastPlans: LoadPlan[];
+  futurePlans: LoadPlan[];
   selectedItemId?: string;
   activeView: ViewPreset;
   workspaceMode: WorkspaceMode;
   report: PlannerReport;
+  canUndo: boolean;
+  canRedo: boolean;
+  undo: () => void;
+  redo: () => void;
   addTemplate: (template: Omit<LoadItemTemplate, "id">) => void;
   addItemFromTemplate: (templateId: string) => void;
   selectItem: (itemId?: string) => void;
@@ -82,19 +89,65 @@ function initialPlan(): LoadPlan {
 
 const loadedPlan = initialPlan();
 
+function commitPlan(state: LoadPlanStore, plan: LoadPlan, selectedItemId = state.selectedItemId): Partial<LoadPlanStore> {
+  return {
+    plan,
+    selectedItemId,
+    pastPlans: [...state.pastPlans, state.plan].slice(-HISTORY_LIMIT),
+    futurePlans: [],
+    canUndo: true,
+    canRedo: false,
+    report: makeReport(plan),
+  };
+}
+
 export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   plan: loadedPlan,
+  pastPlans: [],
+  futurePlans: [],
   selectedItemId: undefined,
   activeView: "iso",
   workspaceMode: "viewport",
   report: makeReport(loadedPlan),
+  canUndo: false,
+  canRedo: false,
+
+  undo: () => set((state) => {
+    const previousPlan = state.pastPlans[state.pastPlans.length - 1];
+    if (!previousPlan) return state;
+    const pastPlans = state.pastPlans.slice(0, -1);
+    return {
+      plan: previousPlan,
+      selectedItemId: undefined,
+      pastPlans,
+      futurePlans: [state.plan, ...state.futurePlans].slice(0, HISTORY_LIMIT),
+      canUndo: pastPlans.length > 0,
+      canRedo: true,
+      report: makeReport(previousPlan),
+    };
+  }),
+
+  redo: () => set((state) => {
+    const nextPlan = state.futurePlans[0];
+    if (!nextPlan) return state;
+    const futurePlans = state.futurePlans.slice(1);
+    return {
+      plan: nextPlan,
+      selectedItemId: undefined,
+      pastPlans: [...state.pastPlans, state.plan].slice(-HISTORY_LIMIT),
+      futurePlans,
+      canUndo: true,
+      canRedo: futurePlans.length > 0,
+      report: makeReport(nextPlan),
+    };
+  }),
 
   addTemplate: (template) => set((state) => {
     const plan = withDerived({
       ...state.plan,
       templates: [...state.plan.templates, { ...template, id: crypto.randomUUID() }],
     });
-    return { plan, report: makeReport(plan) };
+    return commitPlan(state, plan);
   }),
 
   addItemFromTemplate: (templateId) => set((state) => {
@@ -122,7 +175,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       notes: template.notes,
     };
     const plan = withDerived({ ...state.plan, items: [...state.plan.items, nextItem] });
-    return { plan, selectedItemId: nextItem.id, report: makeReport(plan) };
+    return commitPlan(state, plan, nextItem.id);
   }),
 
   selectItem: (itemId) => set({ selectedItemId: itemId }),
@@ -132,7 +185,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       ...state.plan,
       items: state.plan.items.map((item) => item.id === itemId ? { ...item, ...patch } : item),
     });
-    return { plan, report: makeReport(plan) };
+    return commitPlan(state, plan);
   }),
 
   moveItem: (itemId, position, shouldClamp = true) => set((state) => {
@@ -147,7 +200,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       ...state.plan,
       items: state.plan.items.map((entry) => entry.id === itemId ? { ...entry, position: nextPosition } : entry),
     });
-    return { plan, report: makeReport(plan) };
+    return commitPlan(state, plan);
   }),
 
   nudgeSelected: (axis, direction) => set((state) => {
@@ -165,7 +218,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       ...state.plan,
       items: state.plan.items.map((item) => item.id === selected.id ? { ...item, position } : item),
     });
-    return { plan, report: makeReport(plan) };
+    return commitPlan(state, plan);
   }),
 
   rotateSelected90: () => set((state) => {
@@ -180,7 +233,7 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       ...state.plan,
       items: state.plan.items.map((item) => item.id === selected.id ? { ...item, rotation: nextRotation, position } : item),
     });
-    return { plan, report: makeReport(plan) };
+    return commitPlan(state, plan);
   }),
 
   duplicateSelected: () => set((state) => {
@@ -194,23 +247,23 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
       loadOrder: state.plan.items.length + 1,
     };
     const plan = withDerived({ ...state.plan, items: [...state.plan.items, copy] });
-    return { plan, selectedItemId: copy.id, report: makeReport(plan) };
+    return commitPlan(state, plan, copy.id);
   }),
 
   deleteSelected: () => set((state) => {
     if (!state.selectedItemId) return state;
     const plan = withDerived({ ...state.plan, items: state.plan.items.filter((item) => item.id !== state.selectedItemId) });
-    return { plan, selectedItemId: undefined, report: makeReport(plan) };
+    return commitPlan(state, plan, undefined);
   }),
 
   setSnap: (snapMm) => set((state) => {
     const plan = withDerived({ ...state.plan, snapMm });
-    return { plan, report: makeReport(plan) };
+    return commitPlan(state, plan);
   }),
 
   setTruck: (truck) => set((state) => {
     const plan = withDerived({ ...state.plan, truck: { ...state.plan.truck, ...truck } });
-    return { plan, report: makeReport(plan) };
+    return commitPlan(state, plan);
   }),
 
   setView: (view) => set({ activeView: view }),
@@ -224,12 +277,12 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
   loadPlan: (nextPlan) => set(() => {
     const plan = withDerived(nextPlan);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
-    return { plan, selectedItemId: undefined, report: makeReport(plan) };
+    return { plan, selectedItemId: undefined, pastPlans: [], futurePlans: [], canUndo: false, canRedo: false, report: makeReport(plan) };
   }),
 
   resetPlan: () => set(() => {
     const plan = createDefaultPlan();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
-    return { plan, selectedItemId: undefined, report: makeReport(plan) };
+    return { plan, selectedItemId: undefined, pastPlans: [], futurePlans: [], canUndo: false, canRedo: false, report: makeReport(plan) };
   }),
 }));

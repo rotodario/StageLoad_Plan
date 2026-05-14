@@ -1,4 +1,4 @@
-import { Boxes, Columns3, Download, FileJson, FolderOpen, RotateCcw, Save, View } from "lucide-react";
+import { Boxes, Columns3, Download, FileJson, FolderOpen, Redo2, RotateCcw, Save, Undo2, View } from "lucide-react";
 import { useRef } from "react";
 import { useLoadPlanStore } from "../../store/useLoadPlanStore";
 import { exportPlanJson, parsePlanJson } from "../../utils/exportJson";
@@ -23,6 +23,10 @@ export function TopBar() {
   const saveLocal = useLoadPlanStore((state) => state.saveLocal);
   const loadPlan = useLoadPlanStore((state) => state.loadPlan);
   const resetPlan = useLoadPlanStore((state) => state.resetPlan);
+  const undo = useLoadPlanStore((state) => state.undo);
+  const redo = useLoadPlanStore((state) => state.redo);
+  const canUndo = useLoadPlanStore((state) => state.canUndo);
+  const canRedo = useLoadPlanStore((state) => state.canRedo);
 
   function exportJson() {
     const blob = new Blob([exportPlanJson(plan)], { type: "application/json" });
@@ -50,6 +54,10 @@ export function TopBar() {
       <button className="toolbar-btn" onClick={exportJson} title="Exportar JSON"><Download size={16} />Exportar</button>
       <button className="toolbar-btn" onClick={resetPlan} title="Nuevo plan"><RotateCcw size={16} />Reset</button>
       <input ref={inputRef} type="file" accept="application/json" className="hidden" onChange={(event) => importJson(event.target.files?.[0])} />
+      <div className="ml-2 flex items-center gap-1 border-l border-cad-border pl-2">
+        <button className="icon-btn" onClick={undo} disabled={!canUndo} title="Deshacer"><Undo2 size={15} /></button>
+        <button className="icon-btn" onClick={redo} disabled={!canRedo} title="Rehacer"><Redo2 size={15} /></button>
+      </div>
       <div className="ml-2 flex items-center gap-1 border-l border-cad-border pl-2">
         <button className={workspaceMode === "viewport" ? "view-btn-active" : "view-btn"} onClick={() => setWorkspaceMode("viewport")}>
           <Boxes size={14} />3D
