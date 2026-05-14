@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { LoadItemInstance, LoadItemTemplate, LoadPlan, PlannerReport, Truck, Vector3Mm, ViewPreset, WorkspaceMode } from "../types/loadplan";
 import { createDefaultPlan } from "../data/defaultTemplates";
-import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, snapToNearbyFaces, snapVector } from "../utils/geometry";
+import { calculateLoadPercentage, calculateTotalWeight, calculateTruckVolume, calculateUsedVolume, clampDeltaInsideTruck, clampInsideTruck, findFreeFloorPosition, getItemBoundingBox, getItemsBoundingBox, getRotatedSize, moveItemsWouldCollide, snapToNearbyFaces, snapVector } from "../utils/geometry";
 import { assignLoadWalls } from "../utils/loadWalls";
 import { checkAllCollisions, validateLoadPlan } from "../utils/collisions";
 
@@ -224,6 +224,12 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     const snappedToFaces = snapToNearbyFaces(item, template, snapped, state.plan.items, state.plan.templates, state.plan.snapMm);
     const size = getRotatedSize(template, item.rotation);
     const nextPosition = shouldClamp ? clampInsideTruck(snappedToFaces, size, state.plan.truck) : snappedToFaces;
+    const delta = {
+      x: nextPosition.x - item.position.x,
+      y: nextPosition.y - item.position.y,
+      z: nextPosition.z - item.position.z,
+    };
+    if (moveItemsWouldCollide([item.id], state.plan.items, state.plan.templates, delta)) return state;
     const plan = withDerived({
       ...state.plan,
       items: state.plan.items.map((entry) => entry.id === itemId ? { ...entry, position: nextPosition } : entry),
@@ -240,6 +246,8 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     const groupBounds = getItemsBoundingBox(selectedItems, state.plan.templates);
     if (!groupBounds) return state;
     const safeDelta = clampDeltaInsideTruck(groupBounds, snappedDelta, state.plan.truck);
+    if (safeDelta.x === 0 && safeDelta.y === 0 && safeDelta.z === 0) return state;
+    if (moveItemsWouldCollide(selectedItems.map((item) => item.id), state.plan.items, state.plan.templates, safeDelta)) return state;
 
     const plan = withDerived({
       ...state.plan,
@@ -266,6 +274,8 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
     const groupBounds = getItemsBoundingBox(selectedItems, state.plan.templates);
     if (!groupBounds) return state;
     const safeDelta = clampDeltaInsideTruck(groupBounds, delta, state.plan.truck);
+    if (safeDelta.x === 0 && safeDelta.y === 0 && safeDelta.z === 0) return state;
+    if (moveItemsWouldCollide(selectedItems.map((item) => item.id), state.plan.items, state.plan.templates, safeDelta)) return state;
     const plan = withDerived({
       ...state.plan,
       items: state.plan.items.map((item) => selectedIds.includes(item.id) && !item.locked

@@ -8,14 +8,17 @@ import { GridFloor } from "./GridFloor";
 import { LoadItemMesh } from "./LoadItemMesh";
 import { TruckModel } from "./TruckModel";
 import { ViewCube } from "./ViewCube";
-import { clampDeltaInsideTruck, getItemsBoundingBox } from "../../utils/geometry";
+import { clampDeltaInsideTruck, getItemsBoundingBox, moveItemsWouldCollide } from "../../utils/geometry";
 import { metersToMm } from "../../utils/units";
 
 export function TruckScene() {
   const controlsRef = useRef<any>(null);
   const groupControlRef = useRef<THREE.Group | null>(null);
+  const isTransformPointerActiveRef = useRef(false);
+  const lastValidPreviewDeltaRef = useRef({ x: 0, y: 0, z: 0 });
   const [groupControlObject, setGroupControlObject] = useState<THREE.Group | null>(null);
   const [groupDragStartMm, setGroupDragStartMm] = useState<THREE.Vector3 | null>(null);
+  const [previewDeltaMm, setPreviewDeltaMm] = useState({ x: 0, y: 0, z: 0 });
   const { camera } = useThree();
   const plan = useLoadPlanStore((state) => state.plan);
   const activeView = useLoadPlanStore((state) => state.activeView);
@@ -61,12 +64,11 @@ export function TruckScene() {
   }, [activeView, camera, plan.truck, truckCenter]);
 
   function commitTransform() {
-    if (!groupControlRef.current || !groupDragStartMm) return;
-    moveSelectedByDelta({
-      x: metersToMm(groupControlRef.current.position.x) - groupDragStartMm.x,
-      y: metersToMm(groupControlRef.current.position.y) - groupDragStartMm.y,
-      z: metersToMm(groupControlRef.current.position.z) - groupDragStartMm.z,
-    });
+    if (!groupDragStartMm) return;
+    moveSelectedByDelta(previewDeltaMm);
+    setPreviewDeltaMm({ x: 0, y: 0, z: 0 });
+    lastValidPreviewDeltaRef.current = { x: 0, y: 0, z: 0 };
+    isTransformPointerActiveRef.current = false;
     setGroupDragStartMm(null);
   }
 
@@ -78,10 +80,17 @@ export function TruckScene() {
       z: metersToMm(groupControlObject.position.z) - groupDragStartMm.z,
     };
     const safeDelta = clampDeltaInsideTruck(selectedGroupBounds, delta, plan.truck);
+    const movingIds = selectedItems.filter((item) => !item.locked).map((item) => item.id);
+    const collision = moveItemsWouldCollide(movingIds, plan.items, plan.templates, safeDelta);
+    const displayDelta = collision ? lastValidPreviewDeltaRef.current : safeDelta;
+    if (!collision) {
+      lastValidPreviewDeltaRef.current = safeDelta;
+    }
+    setPreviewDeltaMm(displayDelta);
     groupControlObject.position.set(
-      mmToMeters(groupDragStartMm.x + safeDelta.x),
-      mmToMeters(groupDragStartMm.y + safeDelta.y),
-      mmToMeters(groupDragStartMm.z + safeDelta.z),
+      mmToMeters(groupDragStartMm.x + displayDelta.x),
+      mmToMeters(groupDragStartMm.y + displayDelta.y),
+      mmToMeters(groupDragStartMm.z + displayDelta.z),
     );
   }
 
@@ -102,7 +111,12 @@ export function TruckScene() {
             template={plan.templates.find((template) => template.id === item.templateId)}
             selected={activeSelectedIds.includes(item.id)}
             hasCollision={hasCollision}
-            onSelect={(additive) => selectItem(item.id, additive)}
+            previewDeltaMm={previewDeltaMm}
+            selectionDisabled={isTransformPointerActiveRef.current}
+            onSelect={(additive) => {
+              if (isTransformPointerActiveRef.current) return;
+              selectItem(item.id, additive);
+            }}
           />
         );
       })}
@@ -111,7 +125,24 @@ export function TruckScene() {
           key={groupControlKey}
           ref={captureGroupControl}
           position={[mmToMeters(selectedGroupCenter.x), mmToMeters(selectedGroupCenter.y), mmToMeters(selectedGroupCenter.z)]}
-        />
+        >
+          <mesh
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              isTransformPointerActiveRef.current = true;
+            }}
+            onPointerUp={(event) => {
+              event.stopPropagation();
+              isTransformPointerActiveRef.current = false;
+            }}
+            onPointerOut={() => {
+              if (!groupDragStartMm) isTransformPointerActiveRef.current = false;
+            }}
+          >
+            <sphereGeometry args={[0.22, 16, 12]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.03} depthWrite={false} />
+          </mesh>
+        </group>
       )}
       {selectedGroupCenter && groupControlObject && hasMovableSelection && (
           <TransformControls
@@ -127,6 +158,9 @@ export function TruckScene() {
               if (controlsRef.current) controlsRef.current.enabled = true;
             }}
             onMouseDown={() => {
+              isTransformPointerActiveRef.current = true;
+              setPreviewDeltaMm({ x: 0, y: 0, z: 0 });
+              lastValidPreviewDeltaRef.current = { x: 0, y: 0, z: 0 };
               setGroupDragStartMm(new THREE.Vector3(selectedGroupCenter.x, selectedGroupCenter.y, selectedGroupCenter.z));
               if (controlsRef.current) controlsRef.current.enabled = false;
             }}

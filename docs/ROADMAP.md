@@ -20,6 +20,7 @@ Status: partially implemented.
 - Undo/redo for plan edits.
 - Free-position placement when adding or duplicating items.
 - Multi-selection with group movement and truck-bound clamping.
+- Live movement preview and collision-blocked placement.
 - Snap to configurable grid.
 - Snap to truck limits.
 - Basic snap to nearby item faces.

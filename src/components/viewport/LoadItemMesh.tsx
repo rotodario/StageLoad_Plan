@@ -10,17 +10,19 @@ interface Props {
   template?: LoadItemTemplate;
   selected: boolean;
   hasCollision: boolean;
+  previewDeltaMm?: { x: number; y: number; z: number };
+  selectionDisabled?: boolean;
   onSelect: (additive: boolean) => void;
 }
 
-export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh({ item, template, selected, hasCollision, onSelect }, ref) {
+export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh({ item, template, selected, hasCollision, previewDeltaMm, selectionDisabled, onSelect }, ref) {
   if (!template || item.hidden) return null;
   const box = getItemBoundingBox(item, template);
   const size = [mmToMeters(box.size.x), mmToMeters(box.size.y), mmToMeters(box.size.z)] as const;
   const center = [
-    mmToMeters(box.min.x + box.size.x / 2),
-    mmToMeters(box.min.y + box.size.y / 2),
-    mmToMeters(box.min.z + box.size.z / 2),
+    mmToMeters(box.min.x + box.size.x / 2 + (selected ? previewDeltaMm?.x ?? 0 : 0)),
+    mmToMeters(box.min.y + box.size.y / 2 + (selected ? previewDeltaMm?.y ?? 0 : 0)),
+    mmToMeters(box.min.z + box.size.z / 2 + (selected ? previewDeltaMm?.z ?? 0 : 0)),
   ] as const;
   const color = hasCollision ? "#e14d4d" : item.color ?? template.color;
   return (
@@ -29,6 +31,7 @@ export const LoadItemMesh = forwardRef<THREE.Group, Props>(function LoadItemMesh
       position={center}
       onPointerDown={(event) => {
         event.stopPropagation();
+        if (selectionDisabled) return;
         onSelect(event.shiftKey);
       }}
       onPointerOver={(event) => {

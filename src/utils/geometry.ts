@@ -95,6 +95,35 @@ export function clampDeltaInsideTruck(bounds: BoundsMm, delta: Vector3Mm, truck:
   };
 }
 
+export function moveItemsWouldCollide(
+  movingIds: string[],
+  items: LoadItemInstance[],
+  templates: LoadItemTemplate[],
+  delta: Vector3Mm,
+): boolean {
+  const movingIdSet = new Set(movingIds);
+  const movingItems = items.filter((item) => movingIdSet.has(item.id) && !item.hidden);
+  const staticItems = items.filter((item) => !movingIdSet.has(item.id) && !item.hidden);
+
+  return movingItems.some((movingItem) => {
+    const movingTemplate = templates.find((entry) => entry.id === movingItem.templateId);
+    if (!movingTemplate) return false;
+    const movedBox = getItemBoundingBox({
+      ...movingItem,
+      position: {
+        x: movingItem.position.x + delta.x,
+        y: movingItem.position.y + delta.y,
+        z: movingItem.position.z + delta.z,
+      },
+    }, movingTemplate);
+
+    return staticItems.some((staticItem) => {
+      const staticTemplate = templates.find((entry) => entry.id === staticItem.templateId);
+      return staticTemplate ? boundsIntersect(movedBox, getItemBoundingBox(staticItem, staticTemplate)) : false;
+    });
+  });
+}
+
 export function snapToNearbyFaces(
   item: LoadItemInstance,
   template: LoadItemTemplate,
