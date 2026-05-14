@@ -78,24 +78,11 @@ function withDerived(plan: LoadPlan): LoadPlan {
   };
   const orderedItems = assignSpatialLoadOrder(normalizedPlan.items, normalizedPlan.templates);
   const itemsWithWalls = assignLoadWalls(orderedItems, normalizedPlan.templates, normalizedPlan.wallDepthMm);
-  const itemsWithBlocking = itemsWithWalls.map((item) => {
-    const template = normalizedPlan.templates.find((entry) => entry.id === item.templateId);
-    if (!template) return { ...item, blockedBy: [] };
-    const box = getItemBoundingBox(item, template);
-    const blockedBy = itemsWithWalls
-      .filter((other) => {
-        if (other.id === item.id || other.hidden || other.unloadPriority <= item.unloadPriority) return false;
-        const otherTemplate = normalizedPlan.templates.find((entry) => entry.id === other.templateId);
-        if (!otherTemplate) return false;
-        const otherBox = getItemBoundingBox(other, otherTemplate);
-        const betweenItemAndDoor = otherBox.min.x < box.min.x;
-        const yOverlap = box.min.y < otherBox.max.y && box.max.y > otherBox.min.y;
-        const zOverlap = box.min.z < otherBox.max.z && box.max.z > otherBox.min.z;
-        return betweenItemAndDoor && yOverlap && zOverlap;
-      })
-      .map((other) => other.id);
-    return { ...item, blockedBy };
-  });
+  // The old blocked-by heuristic used department priority and "closer to door"
+  // checks. Load/unload order is now spatial and recalculated from the actual
+  // plan, so path-blocking needs a dedicated aisle/door solver to avoid false
+  // positives. Keep the field normalized but do not warn from stale heuristics.
+  const itemsWithBlocking = itemsWithWalls.map((item) => ({ ...item, blockedBy: [] }));
   return {
     ...normalizedPlan,
     items: itemsWithBlocking,
