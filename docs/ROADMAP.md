@@ -11,6 +11,7 @@ Status: implemented.
 - Left library, right inspector and bottom status bar.
 - Selection, labels and basic object state.
 - Modular vehicle model with cab, shell, chassis, axles, wheels and X-Ray/Hybrid display modes.
+- Procedural European cab module with windows, mirrors, grille, bumper, arches and side details.
 - Initial vehicle weight overlays: CG, kingpin, axle group and heatmap.
 - Configurable vehicle weight model with presets, axle limits and group warnings.
 - Vehicle visual geometry driven by the same preset as axle analysis.
