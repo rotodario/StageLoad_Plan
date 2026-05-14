@@ -10,6 +10,7 @@ export function LoadWallsWorkspace() {
   const plan = useLoadPlanStore((state) => state.plan);
   const selectedItemId = useLoadPlanStore((state) => state.selectedItemId);
   const selectItem = useLoadPlanStore((state) => state.selectItem);
+  const setWallNote = useLoadPlanStore((state) => state.setWallNote);
   const walls = useMemo(() => generateLoadWalls(plan.items, plan.templates, plan.truck.lengthMm, plan.wallDepthMm), [plan]);
   const [activeWallNumber, setActiveWallNumber] = useState(1);
   const activeWall = walls.find((wall) => wall.wallNumber === activeWallNumber) ?? walls[0];
@@ -48,6 +49,8 @@ export function LoadWallsWorkspace() {
             truckHeightMm={plan.truck.heightMm}
             selectedItemId={selectedItemId}
             onSelectItem={selectItem}
+            note={plan.wallNotes[activeWall.wallNumber] ?? ""}
+            onNoteChange={(note) => setWallNote(activeWall.wallNumber, note)}
           />
           <div className="mt-4 rounded border border-cad-border bg-cad-panel">
             <div className="grid grid-cols-[48px_1fr_90px_90px_90px_90px] border-b border-cad-border px-3 py-2 text-[11px] uppercase tracking-wide text-cad-muted">
@@ -95,9 +98,11 @@ interface DetailProps {
   truckHeightMm: number;
   selectedItemId?: string;
   onSelectItem: (itemId?: string) => void;
+  note: string;
+  onNoteChange: (note: string) => void;
 }
 
-function LoadWallDetail({ wall, truckWidthMm, truckHeightMm, selectedItemId, onSelectItem }: DetailProps) {
+function LoadWallDetail({ wall, truckWidthMm, truckHeightMm, selectedItemId, onSelectItem, note, onNoteChange }: DetailProps) {
   const templates = useLoadPlanStore((state) => state.plan.templates);
   return (
     <article className="rounded border border-cad-border bg-cad-panel p-3">
@@ -135,6 +140,13 @@ function LoadWallDetail({ wall, truckWidthMm, truckHeightMm, selectedItemId, onS
           );
         })}
       </div>
+      <label className="field-label mt-3">Notas de pared</label>
+      <textarea
+        className="min-h-20 w-full rounded border border-cad-border bg-[#15181d] p-2 text-sm text-cad-text outline-none focus:border-cad-accent"
+        value={note}
+        onChange={(event) => onNoteChange(event.target.value)}
+        placeholder="Notas de carga, protecciones, orden, material delicado..."
+      />
     </article>
   );
 }

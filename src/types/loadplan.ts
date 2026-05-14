@@ -67,6 +67,7 @@ export interface LoadPlan {
   version: string;
   snapMm: number;
   wallDepthMm: number;
+  wallNotes: Record<number, string>;
 }
 
 export interface LoadWall {

@@ -63,6 +63,7 @@ Las conversiones estan centralizadas en `src/utils/units.ts`.
 - Paredes de carga generadas por tramos de 1.20 m.
 - Profundidad configurable para paredes de carga: 1.00, 1.20, 1.50, 2.00 o 2.40 m.
 - Workspace dedicado para revisar paredes de carga en vista frontal.
+- Notas manuales persistentes por pared de carga.
 - Reportes por carga, descarga, departamento y pared.
 - Guardado local, carga JSON y exportacion JSON.
 - Preparacion de payload para futura exportacion PDF.

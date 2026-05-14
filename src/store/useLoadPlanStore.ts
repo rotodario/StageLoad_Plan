@@ -35,6 +35,7 @@ interface LoadPlanStore {
   deleteSelected: () => void;
   setSnap: (snapMm: number) => void;
   setWallDepth: (wallDepthMm: number) => void;
+  setWallNote: (wallNumber: number, note: string) => void;
   setTruck: (truck: Partial<Truck>) => void;
   setView: (view: ViewPreset) => void;
   setWorkspaceMode: (mode: WorkspaceMode) => void;
@@ -60,6 +61,7 @@ function withDerived(plan: LoadPlan): LoadPlan {
   const normalizedPlan = {
     ...plan,
     wallDepthMm: plan.wallDepthMm || 1200,
+    wallNotes: plan.wallNotes || {},
   };
   const itemsWithWalls = assignLoadWalls(normalizedPlan.items, normalizedPlan.templates, normalizedPlan.wallDepthMm);
   const itemsWithBlocking = itemsWithWalls.map((item) => {
@@ -371,6 +373,15 @@ export const useLoadPlanStore = create<LoadPlanStore>((set, get) => ({
 
   setWallDepth: (wallDepthMm) => set((state) => {
     const plan = withDerived({ ...state.plan, wallDepthMm: Math.max(250, wallDepthMm) });
+    return commitPlan(state, plan);
+  }),
+
+  setWallNote: (wallNumber, note) => set((state) => {
+    const nextNotes = { ...state.plan.wallNotes, [wallNumber]: note };
+    if (!note.trim()) {
+      delete nextNotes[wallNumber];
+    }
+    const plan = withDerived({ ...state.plan, wallNotes: nextNotes });
     return commitPlan(state, plan);
   }),
 

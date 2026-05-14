@@ -48,10 +48,10 @@ Status: partially implemented.
 - Configurable load wall depth.
 - Load, unload, department and wall lists.
 - Dedicated load walls workspace with front-view wall review.
+- Manual notes per load wall.
 
 Next:
 
-- Manual wall notes.
 - Better fragile/stackable validation.
 - Advanced blocked-by analysis using path to door.
 

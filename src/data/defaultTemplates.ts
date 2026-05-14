@@ -44,5 +44,6 @@ export function createDefaultPlan(): LoadPlan {
     version: "0.1.0",
     snapMm: 100,
     wallDepthMm: 1200,
+    wallNotes: {},
   };
 }
